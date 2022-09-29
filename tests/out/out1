@@ -1,0 +1,18 @@
+<PACKAGE> 'package'
+<ID> 'main'
+<IMPORT> 'import'
+<BEGIN_PARENTHESIS> '('
+<ID> '"fmt"'
+<ID> '"github.com/antlr/antlr4/runtime/Go/antlr"'
+<ID> '"./parser"'
+<END_PARENTHESIS> ')'
+<FUNCTION> 'func'
+<ID> 'main'
+<BEGIN_PARENTHESIS> '('
+<END_PARENTHESIS> ')'
+<BEGIN_BRACKETS> '{'
+<ID> 'is'
+<ATTR> ':='
+
+<END_BRACKETS> '}'
+
