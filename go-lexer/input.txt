@@ -1,0 +1,14 @@
+// comentario
+
+
+//outro comentario
+
+/*
+    comentario normal
+    
+*/
+
+/*
+    comentario ruim */
+    
+*/
