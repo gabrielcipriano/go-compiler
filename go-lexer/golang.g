@@ -2,7 +2,6 @@ lexer grammar golang;
 
 fragment DIGIT        : [0-9] ;
 fragment ALPHA        : [A-Za-z] ;
-fragment NOZERO       : [1-9];
 fragment LETTER       : ALPHA | '_';
 fragment ESCAPED_CHAR : [abfnrtv\\'"];
 
