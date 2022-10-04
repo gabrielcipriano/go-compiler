@@ -23,46 +23,46 @@ WS                  : [ \n\t]+ -> skip ;
 
 STR_VAL             : '"'(~["]|'\\"')*'"';
 
-
-
-
 // Símbolos
 
 PRINT               : 'fmt.Printf';
-ROUND_BOIS_L        : '(';
-ROUND_BOIS_R        : ')';
-CURVY_BOIS_L        : '{';
-CURVY_BOIS_R        : '}';
-SQUARE_BOIS_L       : '[';
-SQUARE_BOIS_R       : ']';
-ASSIGN              : '=';
-COMMA               : ',';
-SEMI                : ';';
-COLON               : ':';
-DOT                 : '.';
-PLUS_PLUS           : '++';
-MINUS_MINUS         : '--';
-DECLARE_ASSIGN      : ':=';
-ELLIPSIS            : '...';
+SUM_OP              : '+' ;
+PLUS_EQ_OP          : '+=' ;
+AND_AND_OP          : '&&' ;
+EQ_EQ_OP            : '==' ;
+NOT_EQ_OP           : '!=' ;
+OPEN_PAREN          : '(' ;
+CLOSE_PAREN         : ')' ;
+DIFF_OP             : '-' ;
+DIFF_EQ             : '-=' ;
+OR_OP               : '||' ;
+LESS_OP             : '<' ;
+LESS_EQ_OP          : '<=' ;
+OPEN_SQUARE_BR_OP   : '[' ;
+CLOSE_SQUARE_BR_OP  : ']' ;
+MULT_OP             : '*' ;
+MULT_EQ_OP          : '*=' ;
+// : '<-' ; 
+GREATER_OP          : '>' ;
+GREATER_EQ_OP       : '>=' ;
+OPEN_BRACES_OP      : '{' ;
+CLOSE_BRACES_OP     : '}' ;
+QUOTIENT_OP         : '/' ;
+QUOTIENT_EQ_OP      : '/=' ;
+INCREMENT_OP        : '++' ;
+ASSIGN_OP           : '=' ;
+SHORT_VAR_DECL      : ':=' ;
+COMMA               : ',' ;
+SEMICOLON           : ';' ;
+// REMINDER_OP  : '%' ;
+// REMINDER_EQ_OP  : '%=' ;
+DECREMENT_OP        : '--' ;
+NOT_OP              : '!' ;
+// : '...' ;
+DOT                 : '.' ;
+COLON               : ':' ;
+// : '~' ;
 
-PLUS                   : '+';
-MINUS                  : '-';
-CARET                  : '^';
-STAR                   : '*';
-AMPERSAND              : '&';
-RECEIVE                : '<-';
-
-EQUALS                 : '==';
-NOT_EQUALS             : '!=';
-LESS                   : '<';
-LESS_OR_EQUALS         : '<=';
-GREATER                : '>';
-GREATER_OR_EQUALS      : '>=';
-
-// Lógica
-
-LOGICAL_OR             : '||';
-LOGICAL_AND            : '&&';
 
 // Tipo de dados
 
@@ -105,7 +105,6 @@ RETURN              : 'return';
 COMMENT_1           : '//'~[\r\n]* -> skip ;
 COMMENT_2           : '/*' .*? '*/' -> skip;
 
-NUMBER              : NOZERO DIGIT*;
 INT_VAL             : DIGIT+ ;
 REAL_VAL            : DIGIT+'.'DIGIT+ ;
 
