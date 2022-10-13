@@ -16,5 +16,5 @@
 var teste_variavel123 int = 12;
 
 if ( var == 13 ) {
-    return 'abc';
+    return "abc";
 }
