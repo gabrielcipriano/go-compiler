@@ -17,5 +17,6 @@
 # PERSONALIZADO 
 
 /**/target/
+/**/parser/
 /**/.antlr/
 /**/.DS_Store

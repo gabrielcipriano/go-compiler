@@ -2,7 +2,7 @@
 
 A go compiler usign ANTLR4 as frontend
 
-Segue abaixo uma lista m ́ınima de elementos que o seu compilador deve tratar corretamente:
+Segue abaixo uma lista mínima de elementos que o seu compilador deve tratar corretamente: [link da especificação](https://drive.google.com/file/d/1Ku9tgrp-aOVd1E94wm8Z764ovLIV9VsK/view)
 
 - Operações aritméticas e de comparação básicas (+, ∗, <, ==, etc).
 - Comandos de atribuição.
@@ -19,6 +19,13 @@ Segue abaixo uma lista m ́ınima de elementos que o seu compilador deve tratar 
 ### Lexical
 
 Ter casos de testes, saídas esperadas, e vai rolar perguntas sobre as implementações
+
+### Testes
+
+Teste OK:
+  1. Operações matemáticas
+  2. Função composta
+  3. 
 
 ## Dicas
 

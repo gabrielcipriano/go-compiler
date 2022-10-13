@@ -1,4 +1,4 @@
-lexer grammar golang;
+lexer grammar GOLexer;
 
 fragment DIGIT        : [0-9] ;
 fragment ALPHA        : [A-Za-z] ;
