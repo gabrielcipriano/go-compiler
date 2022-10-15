@@ -9,35 +9,41 @@ program:
 ;
 
 stmt:
-  PRINT 
-| op
+  assignment
 ;
 
-assig:
-  ID ASSIGN_OP expr;
+assignment:
+  identifier_list assign_op expr_list;
 
-expr: 
-   expr;
+assign_op: (
+  PLUS
+| MINUS
+| STAR
+| DIV
+)? ASSIGN;
 
-
-
-
-binary_op  : 
-  mul_op
-| rel_op | add_op
-| OR_OP| AND_AND_OP
-;
-
-rel_op     : 
-  EQ_EQ_OP | NOT_EQ_OP| LESS_OP | LESS_EQ_OP | GREATER_OP | GREATER_EQ_OP ;
-add_op     : 
-  SUM_OP | DIFF_OP ;
-mul_op     : 
-  MULT_OP | QUOTIENT_OP ;
-
-unary_op   : 
-  SUM_OP | DIFF_OP | NOT_OP | MULT_OP ;
 
 identifier_list :
   ID (COMMA ID)*
 ;
+
+expr_list:
+  expr (COMMA expr)*;
+
+expr: 
+  unary_op = ( PLUS | MINUS | NOT ) expr
+| expr mul_op = (STAR | DIV) expr
+| expr add_op = (PLUS | MINUS) expr
+| expr rel_op = (
+    EQ_EQ 
+  | NOT_EQ
+  | LESS
+  | LESS_EQ
+  | GREATER
+  | GREATER_EQ
+) expr
+| expr AND_AND expr
+| expr OR expr
+| L_PR expr R_PR
+| ID
+| INT_LIT;

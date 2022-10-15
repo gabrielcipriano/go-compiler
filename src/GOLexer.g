@@ -16,52 +16,42 @@ fragment ESCAPED_CHAR : [abfnrtv\\'"];
 // \\   U+005C backslash
 // \'   U+0027 single quote  (valid escape only within rune literals)
 // \"   U+0022 double quote  (valid escape only within string literals)
-RUNE_VAL            : '\''(~['] | '\\' ESCAPED_CHAR)'\'' ;
+RUNE_LIT            : '\''(~['] | '\\' ESCAPED_CHAR)'\'' ;
 
 WS                  : [ \n\t]+ -> skip ;
 
-STR_VAL             : '"'(~["]|'\\"')*'"';
+STR_LIT             : '"'(~["]|'\\"')*'"';
 
 // Símbolos
 
 PRINT               : 'fmt.Printf';
-SUM_OP              : '+' ;
-PLUS_EQ_OP          : '+=' ;
-AND_AND_OP          : '&&' ;
-EQ_EQ_OP            : '==' ;
-NOT_EQ_OP           : '!=' ;
-OPEN_PAREN          : '(' ;
-CLOSE_PAREN         : ')' ;
-DIFF_OP             : '-' ;
-DIFF_EQ             : '-=' ;
-OR_OP               : '||' ;
-LESS_OP             : '<' ;
-LESS_EQ_OP          : '<=' ;
-OPEN_SQUARE_BR_OP   : '[' ;
-CLOSE_SQUARE_BR_OP  : ']' ;
-MULT_OP             : '*' ;
-MULT_EQ_OP          : '*=' ;
-// : '<-' ; 
-GREATER_OP          : '>' ;
-GREATER_EQ_OP       : '>=' ;
-OPEN_BRACES_OP      : '{' ;
-CLOSE_BRACES_OP     : '}' ;
-QUOTIENT_OP         : '/' ;
-QUOTIENT_EQ_OP      : '/=' ;
-INCREMENT_OP        : '++' ;
-ASSIGN_OP           : '=' ;
+PLUS                : '+' ;
+MINUS               : '-' ;
+STAR                : '*' ;
+DIV                 : '/' ;
+AND_AND             : '&&' ;
+EQ_EQ               : '==' ;
+NOT_EQ              : '!=' ;
+L_PR                : '(' ;
+R_PR                : ')' ;
+OR                  : '||' ;
+LESS                : '<' ;
+LESS_EQ             : '<=' ;
+L_SQUARE_BR         : '[' ;
+R_SQUARE_BR         : ']' ;
+GREATER             : '>' ;
+GREATER_EQ          : '>=' ;
+L_BRACES            : '{' ;
+R_BRACES            : '}' ;
+INCREMENT           : '++' ;
+ASSIGN              : '=' ;
 SHORT_VAR_DECL      : ':=' ;
 COMMA               : ',' ;
 SEMICOLON           : ';' ;
-// REMINDER_OP  : '%' ;
-// REMINDER_EQ_OP  : '%=' ;
-DECREMENT_OP        : '--' ;
-NOT_OP              : '!' ;
-// : '...' ;
+DECREMENT           : '--' ;
+NOT                 : '!' ;
 DOT                 : '.' ;
 COLON               : ':' ;
-// : '~' ;
-
 
 // Tipo de dados
 
@@ -85,7 +75,6 @@ DEFER               : 'defer';
 GO                  : 'go';
 MAP                 : 'map';
 STRUCT              : 'struct';
-CHAN                : 'chan';
 ELSE                : 'else';
 GOTO                : 'goto';
 PACKAGE             : 'package';
@@ -104,7 +93,7 @@ RETURN              : 'return';
 COMMENT_1           : '//'~[\r\n]* -> skip ;
 COMMENT_2           : '/*' .*? '*/' -> skip;
 
-INT_VAL             : DIGIT+ ;
-REAL_VAL            : DIGIT+'.'DIGIT+ ;
+INT_LIT             : DIGIT+ ;
+FLOAT_LIT            : DIGIT+'.'DIGIT+ ;
 
 ID                  : LETTER(LETTER|DIGIT)*;
