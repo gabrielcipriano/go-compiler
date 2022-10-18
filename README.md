@@ -12,13 +12,37 @@ Segue abaixo uma lista mínima de elementos que o seu compilador deve tratar cor
 - Declaração e manipulação de pelo menos um tipo composto (vetores, listas em Python, etc).
 - Declaração e execução correta de chamadas de função com número de parâmetros fixos (não precisa ser varargs).
 - Sistema de tipos que trata adequadamente todos os tipos permitidos.
-- Opera ̧ções de IO básicas sobre stdin e stdout para permitir testes.
+- Operações de IO básicas sobre stdin e stdout para permitir testes.
+
+## Descrições
+- Nosso compilador necessita do uso de ';'
 
 ## Avaliações
 
 ### Lexical
 
 Ter casos de testes, saídas esperadas, e vai rolar perguntas sobre as implementações
+
+### Tipos primitivos:
+
+- char
+- string
+- float32
+- int32
+- bool
+
+Tipo composto:
+- Vetor unidimensional dos tipos primitivos
+  - criação do array: 
+    ```golang
+    var v int[100]
+    ```
+
+  - utilização do array: 
+    ```golang
+    v[i + 1]
+    ```
+
 
 ### Testes
 

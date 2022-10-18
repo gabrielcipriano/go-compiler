@@ -5,22 +5,7 @@ fragment ALPHA        : [A-Za-z] ;
 fragment LETTER       : ALPHA | '_';
 fragment ESCAPED_CHAR : [abfnrtv\\'"];
 
-// After a backslash, certain single-character escapes represent special values:
-// \a   U+0007 alert or bell
-// \b   U+0008 backspace
-// \f   U+000C form feed
-// \n   U+000A line feed or newline
-// \r   U+000D carriage return
-// \t   U+0009 horizontal tab
-// \v   U+000B vertical tab
-// \\   U+005C backslash
-// \'   U+0027 single quote  (valid escape only within rune literals)
-// \"   U+0022 double quote  (valid escape only within string literals)
-RUNE_LIT            : '\''(~['] | '\\' ESCAPED_CHAR)'\'' ;
-
-WS                  : [ \n\t]+ -> skip ;
-
-STR_LIT             : '"'(~["]|'\\"')*'"';
+WS                  : [ \n]+ -> skip ;
 
 // Símbolos
 
@@ -47,7 +32,7 @@ INCREMENT           : '++' ;
 ASSIGN              : '=' ;
 SHORT_VAR_DECL      : ':=' ;
 COMMA               : ',' ;
-SEMICOLON           : ';' ;
+SEMI                : ';' ;
 DECREMENT           : '--' ;
 NOT                 : '!' ;
 DOT                 : '.' ;
@@ -81,7 +66,7 @@ PACKAGE             : 'package';
 SWITCH              : 'switch';
 CONST               : 'const';
 FALLTHROUGH         : 'fallthrough';
-RANGE               : 'range';
+//RANGE               : 'range';
 TYPE                : 'type';
 CONTINUE            : 'continue';
 FOR                 : 'for';
@@ -93,7 +78,9 @@ RETURN              : 'return';
 COMMENT_1           : '//'~[\r\n]* -> skip ;
 COMMENT_2           : '/*' .*? '*/' -> skip;
 
+NIL_LIT             : 'nil';
 INT_LIT             : DIGIT+ ;
-FLOAT_LIT            : DIGIT+'.'DIGIT+ ;
+FLOAT_LIT           : DIGIT+'.'DIGIT+ ;
+STR_LIT             : '"'(~["]|'\\"')*'"';
 
 ID                  : LETTER(LETTER|DIGIT)*;
