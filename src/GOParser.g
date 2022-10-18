@@ -47,3 +47,44 @@ expr:
 | L_PR expr R_PR
 | ID
 | INT_LIT;
+
+/*simpleStmt:
+	| incDecStmt
+	| assignment
+	| expressionStmt
+	| shortVarDecl;
+
+expressionStmt : 
+  expr;*/
+
+forStmt: FOR (expr? | forClause | rangeClause?) block;
+
+block: L_BRACES statementList? R_BRACES;
+
+statementList: (/*(SEMI? | EOS? | {this.closingBracket()}?)*/ statement /*eos*/)+;
+
+statement:
+	//declaration
+	//| labeledStmt
+	//| simpleStmt
+	//| goStmt
+	//| returnStmt
+	//| breakStmt
+	//| continueStmt
+	//| gotoStmt
+	//| fallthroughStmt
+	//| block
+	//| ifStmt
+	//| switchStmt
+	//| selectStmt
+	forStmt;
+	//| deferStmt;
+
+
+rangeClause: /*(
+		expressionList ASSIGN
+		| identifierList DECLARE_ASSIGN
+	)?*/ RANGE expr;
+
+forClause:
+	initStmt = /*simpleStmt? eos */expr? /*eos*/ postStmt = expr?;
