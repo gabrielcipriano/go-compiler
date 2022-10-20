@@ -12,7 +12,13 @@ program:
 package_clause: PACKAGE packageName = ID;
 
 assignment:
-  identifier_list assign_op expr_list;
+  assignee_list assign_op expr_list;
+
+assignee_list:
+	 assignee (COMMA assignee)*;
+
+assignee:
+	ID index?;
 
 assign_op: (
   PLUS
@@ -98,7 +104,6 @@ parameterDecl: identifier_list? type;
 
 result: parameters | type;
 
-// VISUALIZAR OQ SÃO ESSAS COISAS AQUI	
 declaration: const_decl | var_decl;
 
 const_decl: CONST (const_spec | L_PR (const_spec eos)* R_PR);
@@ -112,7 +117,6 @@ var_spec:
 		type (ASSIGN expr_list)?
 		| ASSIGN expr_list
 	);
-// Termina aqui oq precisa entender
 
 for_clause:
 	init_stmt = simple_stmt? eos expr eos post_stmt = simple_stmt?;

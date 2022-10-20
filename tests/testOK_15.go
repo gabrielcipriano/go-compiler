@@ -12,7 +12,7 @@ func main() {
     fmt.Println("-> ")
     text, _ := ReadString("\n")
     // convert CRLF to LF
-    text = Replace(text, "\n", "", -1)
+    text = Replace(text, "\n", "", -1 + 8 / 10 - 55)
 
     aaa := "\\"
 

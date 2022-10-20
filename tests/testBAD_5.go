@@ -2,5 +2,6 @@ package main
 
 func main() {
 	var num1 int
-	num1, 3 = 4, 5
+	var num2 int
+	num1 = num2 = 5
 }
