@@ -5,9 +5,11 @@ options {
 }
 
 program: 
-  statement+
-;
+	package_clause eos (
+		(function_decl | declaration) eos
+	)* EOF;
 
+package_clause: PACKAGE packageName = ID;
 
 assignment:
   identifier_list assign_op expr_list;
@@ -28,7 +30,7 @@ expr_list:
   expr (COMMA expr)*;
 
 expr: 
-  primary_expr
+	primary_expr
 | unary_op = ( PLUS | MINUS | NOT ) expr
 | expr mul_op = (STAR | DIV) expr
 | expr add_op = (PLUS | MINUS) expr
@@ -43,69 +45,120 @@ expr:
 | expr AND_AND expr
 | expr OR expr;
 
-/*simpleStmt:
-	| incDecStmt
-	| assignment
-	| expressionStmt
-	| shortVarDecl;
+primary_expr:
+	operand
+	| primary_expr (
+		index
+		| arguments
+	);
 
-expressionStmt : 
+index: L_BRACKETS expr R_BRACKETS;
+/*simple_stmt:
+	| inc_dec_stmt
+	| assignment
+	| expression_stmt
+	| shortVar_decl;
+
+expression_stmt : 
   expr;*/
 
-forStmt: FOR (expr? | forClause) block;
+for_stmt: FOR (expr? | for_clause) block;
 
-block: L_BRACES statementList? R_BRACES;
+block: L_BRACES statement_list? R_BRACES;
 
-statementList: (statement SEMI)+;
+statement_list: (statement eos)+;
 
 statement:
-	//declaration
-	//| labeledStmt
-	simpleStmt
-	//| goStmt
-	| returnStmt
-	| breakStmt
-	| continueStmt
-	//| gotoStmt
-	//| fallthroughStmt
+	declaration
+ 	| simple_stmt
+	| return_stmt
+	| break_stmt
+	| continue_stmt
 	| block
-	//| ifStmt
-	//| switchStmt
-	//| selectStmt
-	| forStmt;
-	//| deferStmt;
+	| if_stmt
+	| for_stmt
+	| print;
 
-forClause:
-	initStmt = simpleStmt? SEMI expr SEMI postStmt = expr?;
+print:
+	PRINT L_PR expr_list R_PR;
 
-simpleStmt:
-	incDecStmt
+function_decl: FUNC ID (signature block?);
+
+signature:
+	parameters result
+	| parameters;
+	
+parameters:
+	L_PR (parameterDecl (COMMA parameterDecl)* COMMA?)? R_PR;
+
+arguments: 
+	 L_PR expr_list? R_PR;
+
+parameterDecl: identifier_list? type;
+
+result: parameters | type;
+
+// VISUALIZAR OQ SÃO ESSAS COISAS AQUI	
+declaration: const_decl | var_decl;
+
+const_decl: CONST (const_spec | L_PR (const_spec eos)* R_PR);
+
+var_decl: VAR (var_spec | L_PR (var_spec eos)* R_PR);
+
+const_spec: identifier_list (type? ASSIGN expr_list);
+
+var_spec:
+	identifier_list (
+		type (ASSIGN expr_list)?
+		| ASSIGN expr_list
+	);
+// Termina aqui oq precisa entender
+
+for_clause:
+	init_stmt = simple_stmt? eos expr eos post_stmt = simple_stmt?;
+
+if_stmt:
+	IF 
+		( expr
+				| eos expr
+				| simple_stmt eos expr
+		) 
+	block 
+	(
+		ELSE (if_stmt | block)
+	)?;
+
+simple_stmt:
+	inc_dec_stmt
 	| assignment
-	| expressionStmt
-	| shortVarDecl;
+	| expression_stmt
+	| shortVar_decl;
 
-breakStmt: BREAK ID?;
+break_stmt: BREAK ID?;
 
-continueStmt: CONTINUE ID?;
+continue_stmt: CONTINUE ID?;
 
-incDecStmt: expr (INCREMENT | DECREMENT);
+inc_dec_stmt: expr (INCREMENT | DECREMENT);
 
-returnStmt: RETURN expr_list?;
+return_stmt: RETURN expr_list?;
 
-expressionStmt: expr;
+expression_stmt: expr;
 
-shortVarDecl: identifier_list SHORT_VAR_DECL expr_list;
-
-primary_expr:
-  operand;
+shortVar_decl: identifier_list SHORT_VAR_DECL expr_list;
 
 operand:
- literal;
+ literal | operand_name | L_PR expr R_PR;
+
+ operand_name:
+	ID;
 
 literal:
-	basic_lit
-//  basic_lit | composite_lit
+	basic_lit | composite_lit 
 ;
+
+composite_lit: literal_type literal_value;
+
+literal_value: L_BRACES element_list? R_BRACES;
 
 basic_lit:
   NIL_LIT
@@ -118,15 +171,17 @@ basic_lit:
 literal_type:
   array_type;
 
-//literal_value:
- // L_BRACES (elementList COMMA?)? R_BRACES
- // ;
-
 element_list: expr (COMMA expr)*;
 
 type_name: ID;
 
-array_type: L_SQUARE_BR expr R_SQUARE_BR type;
+array_type: L_BRACKETS expr R_BRACKETS type;
 
 type:
-  INT | FLOAT32 | STRING | BOOLEAN | array_type | R_PR type L_PR;
+  INT | FLOAT32 | STRING | BOOLEAN | literal_type | L_PR type R_PR;
+
+eos:
+	SEMI
+	| EOF
+	| EOS
+	;

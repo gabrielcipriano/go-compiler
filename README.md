@@ -14,9 +14,6 @@ Segue abaixo uma lista mínima de elementos que o seu compilador deve tratar cor
 - Sistema de tipos que trata adequadamente todos os tipos permitidos.
 - Operações de IO básicas sobre stdin e stdout para permitir testes.
 
-## Descrições
-- Nosso compilador necessita do uso de ';'
-
 ## Avaliações
 
 ### Lexical
@@ -42,7 +39,6 @@ Tipo composto:
     ```golang
     v[i + 1]
     ```
-
 
 ### Testes
 

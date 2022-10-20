@@ -5,11 +5,12 @@ fragment ALPHA        : [A-Za-z] ;
 fragment LETTER       : ALPHA | '_';
 fragment ESCAPED_CHAR : [abfnrtv\\'"];
 
-WS                  : [ \n]+ -> skip ;
+WS                  : [ \t]+  -> skip ;
+TERMINATOR          : [\r\n]+ -> skip;
 
 // Símbolos
 
-PRINT               : 'fmt.Printf';
+PRINT               : 'fmt.Println';
 PLUS                : '+' ;
 MINUS               : '-' ;
 STAR                : '*' ;
@@ -18,39 +19,39 @@ AND_AND             : '&&' ;
 EQ_EQ               : '==' ;
 NOT_EQ              : '!=' ;
 L_PR                : '(' ;
-R_PR                : ')' ;
+R_PR                : ')' -> mode(NLSEMI);
 OR                  : '||' ;
 LESS                : '<' ;
 LESS_EQ             : '<=' ;
-L_SQUARE_BR         : '[' ;
-R_SQUARE_BR         : ']' ;
+L_BRACKETS         : '[' ;
+R_BRACKETS         : ']' -> mode(NLSEMI);
 GREATER             : '>' ;
 GREATER_EQ          : '>=' ;
 L_BRACES            : '{' ;
-R_BRACES            : '}' ;
-INCREMENT           : '++' ;
+R_BRACES            : '}' -> mode(NLSEMI);
+INCREMENT           : '++' -> mode(NLSEMI);
 ASSIGN              : '=' ;
 SHORT_VAR_DECL      : ':=' ;
 COMMA               : ',' ;
 SEMI                : ';' ;
-DECREMENT           : '--' ;
+DECREMENT           : '--' -> mode(NLSEMI);
 NOT                 : '!' ;
 DOT                 : '.' ;
 COLON               : ':' ;
 
 // Tipo de dados
 
-INT                 : 'int';
-FLOAT32             : 'float32';
-STRING              : 'string';
-BOOLEAN             : 'bool';
+INT                 : 'int' -> mode(NLSEMI);
+FLOAT32             : 'float32' -> mode(NLSEMI);
+STRING              : 'string' -> mode(NLSEMI);
+BOOLEAN             : 'bool' -> mode(NLSEMI);
 VAR                 : 'var';
 
 // Palavras reservadas
 
 IF                  : 'if' ;
 WHILE               : 'while';
-BREAK               : 'break';
+BREAK               : 'break'  -> mode(NLSEMI);
 DEFAULT             : 'default';
 FUNC                : 'func';
 INTERFACE           : 'interface';
@@ -58,7 +59,6 @@ SELECT              : 'select';
 CASE                : 'case';
 DEFER               : 'defer';
 GO                  : 'go';
-MAP                 : 'map';
 STRUCT              : 'struct';
 ELSE                : 'else';
 GOTO                : 'goto';
@@ -68,19 +68,33 @@ CONST               : 'const';
 FALLTHROUGH         : 'fallthrough';
 //RANGE               : 'range';
 TYPE                : 'type';
-CONTINUE            : 'continue';
+CONTINUE            : 'continue' -> mode(NLSEMI);
 FOR                 : 'for';
-IMPORT              : 'import';
-RETURN              : 'return';
+IMPORT              : 'import' .*? '\n' -> skip;
+RETURN              : 'return' -> mode(NLSEMI);
 
 // Strings
 
 COMMENT_1           : '//'~[\r\n]* -> skip ;
 COMMENT_2           : '/*' .*? '*/' -> skip;
 
-NIL_LIT             : 'nil';
-INT_LIT             : DIGIT+ ;
-FLOAT_LIT           : DIGIT+'.'DIGIT+ ;
-STR_LIT             : '"'(~["]|'\\"')*'"';
+NIL_LIT             : 'nil'-> mode(NLSEMI);
+INT_LIT             : DIGIT+ -> mode(NLSEMI);
+FLOAT_LIT           : DIGIT+'.'DIGIT+ -> mode(NLSEMI);
+STR_LIT             : '"'(~["]|'\\"')*?'"'-> mode(NLSEMI);
 
-ID                  : LETTER(LETTER|DIGIT)*;
+ID                  : LETTER(LETTER|DIGIT)* -> mode(NLSEMI);
+
+
+mode NLSEMI;
+
+// whitespace as normal
+WS_NLSEMI              : [ \t]+   -> skip;
+// Ignore any comments that only span one line
+COMMENT_NLSEMI         : '/*' ~[\r\n]*? '*/' -> skip;
+LINE_COMMENT_NLSEMI    : '//' ~[\r\n]*       -> skip;
+// Emit an EOS token for any newlines, semicolon, multiline comments or the EOF and 
+//return to normal lexing
+EOS                    : ([\r\n]+ | ';' | '/*' .*? '*/' | EOF) -> mode(DEFAULT_MODE);
+// Did not find an EOS, so go back to normal lexing
+OTHER                  : -> mode(DEFAULT_MODE), skip;
