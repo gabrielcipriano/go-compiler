@@ -1,5 +1,4 @@
 lexer grammar GOLexer;
-//Eu consigo fazer commits, otario
 
 fragment DIGIT        : [0-9] ;
 fragment ALPHA        : [A-Za-z] ;
