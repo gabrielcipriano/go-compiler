@@ -1,5 +1,9 @@
 lexer grammar GOLexer;
 
+@header {
+    package parser;
+}
+
 fragment DIGIT        : [0-9] ;
 fragment ALPHA        : [A-Za-z] ;
 fragment LETTER       : ALPHA | '_';

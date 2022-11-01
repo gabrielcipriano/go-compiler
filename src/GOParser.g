@@ -4,6 +4,10 @@ options {
   tokenVocab = GOLexer;
 }
 
+@header {
+    package parser;
+}
+
 program: 
 	package_clause eos (
 		(function_decl | declaration) eos
