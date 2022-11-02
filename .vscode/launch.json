@@ -16,7 +16,7 @@
             "request": "launch",
             "mainClass": "Main",
             "projectName": "go-compiler_233bafd6",
-            "args": "/home/ryan/Documents/2022-2/Compiladores/go-compiler/tests/testOK_1.go"
+            "args": "/home/ryan/Documents/2022-2/Compiladores/go-compiler/tests/testOK_8.go"
         }
     ]
 }

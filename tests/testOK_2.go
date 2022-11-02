@@ -5,6 +5,12 @@ import "fmt"
 func main() {
 	fmt.Println("Hello, World!")
 	printNoix("Noix")
+
+	if (1 == 2) {
+		tia := "Marcia"
+	}
+
+	vovo := "Denira"
 }
 
 func printNoix(str string) {

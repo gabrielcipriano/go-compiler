@@ -95,7 +95,7 @@ signature:
 parameters:
 	L_PR (parameterDecl (COMMA parameterDecl)* COMMA?)? R_PR;
 
-arguments: 
+arguments:
 	 L_PR expr_list? R_PR;
 
 parameterDecl: identifier_list? type;
@@ -184,8 +184,13 @@ type_name: ID;
 array_type: L_BRACKETS expr R_BRACKETS type;
 
 type:
-  // INT | FLOAT32 | STRING | BOOLEAN | literal_type | L_PR type R_PR;
-  INT | FLOAT32 | STRING | BOOLEAN | array_type | L_PR type R_PR;
+  INT # intType
+  | FLOAT32 				# floatType
+  | STRING 						# stringType
+  | BOOLEAN 						# boolType
+  | array_type 			# arrayType
+  | L_PR type R_PR						# brackets
+  ;
 
 eos:
 	SEMI
