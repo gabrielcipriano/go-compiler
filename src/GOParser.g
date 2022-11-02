@@ -10,7 +10,7 @@ options {
 
 program: 
 	package_clause eos (
-		(function_decl | declaration) eos
+		(function_decl | const_decl | var_decl) eos
 	)* EOF;
 
 package_clause: PACKAGE packageName = ID;
@@ -24,7 +24,7 @@ assignee_list:
 assignee:
 	ID index?;
 
-assign_op: (
+assign_op: op = (
   PLUS
 | MINUS
 | STAR
@@ -40,10 +40,10 @@ expr_list:
   expr (COMMA expr)*;
 
 expr: 
-	primary_expr
-| unary_op = ( PLUS | MINUS | NOT ) expr
-| expr mul_op = (STAR | DIV) expr
-| expr add_op = (PLUS | MINUS) expr
+  operand	(index	| arguments)?							# operandExpr
+| unary_op = (PLUS | MINUS | NOT) expr 			# unary
+| expr mul_op = (STAR | DIV) expr						# multDiv
+| expr add_op = (PLUS | MINUS) expr					# plusMinus
 | expr rel_op = (
     EQ_EQ 
   | NOT_EQ
@@ -51,26 +51,20 @@ expr:
   | LESS_EQ
   | GREATER
   | GREATER_EQ
-) expr
-| expr AND_AND expr
-| expr OR expr;
+) expr 																			# relation
+| expr AND_AND expr													# and
+| expr OR expr															# or
+;
 
-primary_expr:
-	operand
-	| primary_expr (
-		index
-		| arguments
-	);
+// primary_expr:
+// 	operand
+// 	| primary_expr (
+// 		index
+// 		| arguments
+// 	);
+
 
 index: L_BRACKETS expr R_BRACKETS;
-/*simple_stmt:
-	| inc_dec_stmt
-	| assignment
-	| expression_stmt
-	| shortVar_decl;
-
-expression_stmt : 
-  expr;*/
 
 for_stmt: FOR (expr? | for_clause) block;
 
@@ -79,7 +73,7 @@ block: L_BRACES statement_list? R_BRACES;
 statement_list: (statement eos)+;
 
 statement:
-	declaration
+	const_decl | var_decl
  	| simple_stmt
 	| return_stmt
 	| break_stmt
@@ -108,7 +102,7 @@ parameterDecl: identifier_list? type;
 
 result: parameters | type;
 
-declaration: const_decl | var_decl;
+// declaration: const_decl | var_decl;
 
 const_decl: CONST (const_spec | L_PR (const_spec eos)* R_PR);
 
@@ -161,23 +155,27 @@ operand:
 	ID;
 
 literal:
-	basic_lit | composite_lit 
-;
-
-composite_lit: literal_type literal_value;
-
-literal_value: L_BRACES element_list? R_BRACES;
-
-basic_lit:
-  NIL_LIT
+	basic = (
+	NIL_LIT
 | INT_LIT
 | STR_LIT
-| FLOAT_LIT;
+| FLOAT_LIT ) | array_type literal_array 
+;
+
+// composite_lit: array_type literal_array;
+
+literal_array: L_BRACES element_list? R_BRACES;
+
+// basic_lit:
+//   NIL_LIT
+// | INT_LIT
+// | STR_LIT
+// | FLOAT_LIT;
 
 // composite_lit: 
 
-literal_type:
-  array_type;
+// literal_type:
+//   array_type;
 
 element_list: expr (COMMA expr)*;
 
@@ -186,7 +184,8 @@ type_name: ID;
 array_type: L_BRACKETS expr R_BRACKETS type;
 
 type:
-  INT | FLOAT32 | STRING | BOOLEAN | literal_type | L_PR type R_PR;
+  // INT | FLOAT32 | STRING | BOOLEAN | literal_type | L_PR type R_PR;
+  INT | FLOAT32 | STRING | BOOLEAN | array_type | L_PR type R_PR;
 
 eos:
 	SEMI
