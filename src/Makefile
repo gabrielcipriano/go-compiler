@@ -3,7 +3,7 @@ JAVAC=javac
 # Comando da JVM
 JAVA=java
 # ROOT é a raiz dos diretórios com todos os roteiros de laboratórios
-ROOT=/home/rtfsmonteiro/Documents/go-compiler
+ROOT=/home/ryan/Documents/2022-2/Compiladores/go-compiler
 # Caminho para o JAR do ANTLR em labs/tools
 ANTLR_PATH=$(ROOT)/tools/antlr-4.11.1-complete.jar
 # Opção de configuração do CLASSPATH para o ambiente Java
@@ -38,7 +38,7 @@ run:
 	$(JAVA) $(CLASS_PATH_OPTION):$(BIN_PATH) Main $(FILE)
 # Executa o TestRig para exibir a parse tree
 debug:
-	cd $(BIN_PATH) && $(GRUN) $(GRAMMAR_NAME) program -gui $(FILE)
+	cd $(BIN_PATH) && $(GRUN) $(GEN_PATH).$(GRAMMAR_NAME) program -gui $(FILE)
 # Remove os arquivos gerados pelo ANTLR
 clean:
 	@rm -rf $(GEN_PATH) $(BIN_PATH)
