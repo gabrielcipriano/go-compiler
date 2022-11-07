@@ -82,6 +82,8 @@ RETURN              : 'return' -> mode(NLSEMI);
 COMMENT_1           : '//'~[\r\n]* -> skip ;
 COMMENT_2           : '/*' .*? '*/' -> skip;
 
+TRUE_LIT            : 'true'-> mode(NLSEMI);
+FALSE_LIT           : 'false'-> mode(NLSEMI);
 NIL_LIT             : 'nil'-> mode(NLSEMI);
 INT_LIT             : DIGIT+ -> mode(NLSEMI);
 FLOAT_LIT           : DIGIT+'.'DIGIT+ -> mode(NLSEMI);

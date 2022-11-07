@@ -1,6 +1,9 @@
 package checker;
 
+import java.util.LinkedList;
+
 import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.tree.TerminalNode;
 
 import parser.GOParser;
 import parser.GOParserBaseVisitor;
@@ -38,22 +41,26 @@ public class SemanticChecker extends GOParserBaseVisitor<Void> {
 	private StrTable st = new StrTable(); // Tabela de strings.
 	private VarTable vt = new VarTable(); // Tabela de variáveis.
 
+	private LinkedList<Type> typeQueue = new LinkedList<Type>();
+
+	private Type lastInferType; // Variável "global" com o último tipo inferido.
 	private Type lastDeclType; // Variável "global" com o último tipo declarado.
-	private boolean shortDeclare = false;
+	private boolean infer = true;
 	// Testa se o dado token foi declarado antes.
-	private void checkVar(Token token) {
+	private Type checkVar(Token token) {
 		String text = token.getText();
 		int line = token.getLine();
 		int idx = vt.lookupVar(text);
 		if (idx == -1) {
 			System.err.printf("SEMANTIC ERROR (%d): variable '%s' was not declared.\n", line, text);
 			System.exit(1);
-			return; // Never reached.
+			return null; // Never reached.
 		}
+		return vt.getType(idx);
 	}
 
 	// Cria uma nova variável a partir do dado token.
-	private void newVar(Token token) {
+	private void newVar(Token token, Type type) {
 		String text = token.getText();
 		int line = token.getLine();
 		int idx = vt.lookupVar(text);
@@ -63,7 +70,7 @@ public class SemanticChecker extends GOParserBaseVisitor<Void> {
 			System.exit(1);
 			return; // Never reached.
 		}
-		vt.addVar(text, line, lastDeclType);
+		vt.addVar(text, line, type);
 	}
 
 	// Exibe o conteúdo das tabelas em stdout.
@@ -78,15 +85,47 @@ public class SemanticChecker extends GOParserBaseVisitor<Void> {
 	@Override
 	public Void visitAssignee(GOParser.AssigneeContext ctx) {
 		// if(ctx)
-		newVar(ctx.ID().getSymbol());
+		// newVar(ctx.ID().getSymbol());
+		checkVar(ctx.ID().getSymbol());
 
 		return null;
 	}
 
 	@Override
 	public Void visitIdentifier_list(GOParser.Identifier_listContext ctx) {
-
 		// checkVar(ctx.ID());
+
+		for (TerminalNode id : ctx.ID()) {
+			if (infer) {
+				newVar(id.getSymbol(), typeQueue.removeFirst());
+			} else {
+				newVar(id.getSymbol(), lastDeclType);
+			}
+		}
+		return null;
+	}
+
+	@Override
+	public Void visitVar_spec(GOParser.Var_specContext ctx) {
+		infer = false;
+		visit(ctx.type());
+		if (ctx.expr_list() != null) {
+			visit(ctx.expr_list());
+		}
+		visit(ctx.identifier_list());
+		return null;
+	}
+
+	@Override
+	public Void visitConst_spec(GOParser.Const_specContext ctx) {
+		infer = false;
+		// if (ctx.type() != null) {
+		// 	infer = false;
+		// 	visit(ctx.type());
+		// }
+		visit(ctx.type());
+		visit(ctx.expr_list());
+		visit(ctx.identifier_list());
 		return null;
 	}
 
@@ -115,6 +154,13 @@ public class SemanticChecker extends GOParserBaseVisitor<Void> {
 	}
 
 	@Override
+	public Void visitOperand_name(GOParser.Operand_nameContext ctx) {
+		checkVar(ctx.ID().getSymbol());
+		return null;
+	}
+
+
+	@Override
 	public Void visitShortVar_decl(GOParser.ShortVar_declContext ctx) {
 		// a, b := 1, "sim"
 		// var a, b, c int
@@ -122,9 +168,7 @@ public class SemanticChecker extends GOParserBaseVisitor<Void> {
 
 		// TODO Comparar a lista de variáveis com a lista de valores(quantidade)
 
-		this.shortDeclare = true;
 		visitChildren(ctx);
-		this.shortDeclare = false;
 		return null;
 	}
 

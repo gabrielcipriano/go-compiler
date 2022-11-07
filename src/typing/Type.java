@@ -1,11 +1,12 @@
 package typing;
 
-// Enumeração dos tipos primitivos que podem existir em EZLang.
+// Enumeração dos tipos primitivos
 public enum Type {
 	INT_TYPE("int"),
 	FLOAT32_TYPE("float32"),
 	STRING_TYPE("string"),
-	BOOLEAN_TYPE("bool");
+	BOOLEAN_TYPE("bool"),
+	INFERED_TYPE("infer");
 
 	private String name;
 
@@ -30,6 +31,8 @@ public enum Type {
 				return "bool";
 			case STRING_TYPE:
 				return "string";
+			case INFERED_TYPE:
+				return "infer";
 			default:
 				System.err.println("ERROR: Fall through in Type enumeration!");
 				System.exit(1);

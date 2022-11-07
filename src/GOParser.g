@@ -104,17 +104,13 @@ result: parameters | type;
 
 // declaration: const_decl | var_decl;
 
-const_decl: CONST (const_spec | L_PR (const_spec eos)* R_PR);
+const_decl: CONST const_spec;
 
-var_decl: VAR (var_spec | L_PR (var_spec eos)* R_PR);
+var_decl: VAR var_spec;
 
-const_spec: identifier_list (type? ASSIGN expr_list);
+const_spec: identifier_list type ASSIGN expr_list;
 
-var_spec:
-	identifier_list (
-		type (ASSIGN expr_list)?
-		| ASSIGN expr_list
-	);
+var_spec: identifier_list type (ASSIGN expr_list)?;
 
 for_clause:
 	init_stmt = simple_stmt? eos expr eos post_stmt = simple_stmt?;
@@ -159,7 +155,9 @@ literal:
 	NIL_LIT
 | INT_LIT
 | STR_LIT
-| FLOAT_LIT ) | array_type literal_array 
+| FLOAT_LIT
+| TRUE_LIT
+| FALSE_LIT ) | array_type literal_array 
 ;
 
 // composite_lit: array_type literal_array;
@@ -184,12 +182,12 @@ type_name: ID;
 array_type: L_BRACKETS expr R_BRACKETS type;
 
 type:
-  INT # intType
+  INT 							# intType
   | FLOAT32 				# floatType
-  | STRING 						# stringType
-  | BOOLEAN 						# boolType
+  | STRING 					# stringType
+  | BOOLEAN 				# boolType
   | array_type 			# arrayType
-  | L_PR type R_PR						# brackets
+  | L_PR type R_PR	# brackets
   ;
 
 eos:
