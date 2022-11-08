@@ -45,7 +45,19 @@ Tipo composto:
 Teste OK:
   1. Operações matemáticas
   2. Função composta
-  3. 
+
+## CP 4
+
+- Tabela de Funções (nome, lista de parâmetros, lista de retorno)
+  - Tem q alinhar oq está recebendo com o que está retornando
+
+    ```golang
+    var a, b = foo()
+
+    func foo () (int, int) {
+      return 2, 2
+    }
+    ```
 
 ## Dicas
 
