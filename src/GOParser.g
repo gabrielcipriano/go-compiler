@@ -78,7 +78,7 @@ statement:
 	| return_stmt
 	| break_stmt
 	| continue_stmt
-	| block
+	// | block
 	| if_stmt
 	| for_stmt
 	| print;

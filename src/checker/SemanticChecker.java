@@ -7,7 +7,9 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 
 import parser.GOParser;
 import parser.GOParserBaseVisitor;
+import tables.ScopeHandler;
 import tables.StrTable;
+import tables.VarEntry;
 import tables.VarTable;
 import typing.Type;
 import typing.SpecialType;
@@ -41,6 +43,7 @@ public class SemanticChecker extends GOParserBaseVisitor<Void> {
 
 	private StrTable st = new StrTable(); // Tabela de strings.
 	private VarTable vt = new VarTable(); // Tabela de variáveis.
+	private ScopeHandler sh = new ScopeHandler();
 
 	private LinkedList<Type> typeQueue = new LinkedList<Type>();
 
@@ -51,54 +54,57 @@ public class SemanticChecker extends GOParserBaseVisitor<Void> {
 	private boolean isFunction = false;
 	// Testa se o dado token foi declarado antes.
 	private Type checkVar(Token token) {
-		String text = token.getText();
+		String varName = token.getText();
 		int line = token.getLine();
-		int idx = vt.lookupVar(text);
-		if (idx == -1) {
-			System.err.printf("SEMANTIC ERROR (%d): variable '%s' was not declared.\n", line, text);
+		VarEntry entry = sh.lookupVar(varName);
+		if (entry == null) {
+			System.err.printf("SEMANTIC ERROR (%d): variable '%s' was not declared.\n", line, varName);
 			System.exit(1);
 			return null; // Never reached.
 		}
-		if (isArray && vt.getSpecialType(idx) != SpecialType.ARRAY) {
-			System.err.printf("SEMANTIC ERROR (%d): variable '%s' is not an array.\n", line, text);
+		if (isArray && entry.special != SpecialType.ARRAY) {
+			System.err.printf("SEMANTIC ERROR (%d): variable '%s' is not an array.\n", line, varName);
 			System.exit(1);
 			return null; // Never reached.
 		}
-		if (isFunction && vt.getSpecialType(idx) != SpecialType.FUNCTION) {
-			System.err.printf("SEMANTIC ERROR (%d): variable '%s' is not a function.\n", line, text);
+		if (isFunction && entry.special != SpecialType.FUNCTION) {
+			System.err.printf("SEMANTIC ERROR (%d): variable '%s' is not a function.\n", line, varName);
 			System.exit(1);
 			return null; // Never reached.
 		}
-		return vt.getType(idx);
+		return entry.type;
 	}
 
 	// Cria uma nova variável a partir do dado token.
 	private void newVar(Token token, Type type) {
-		String text = token.getText();
+		String varName = token.getText();
 		int line = token.getLine();
-		int idx = vt.lookupVar(text);
-		if (idx != -1) {
-			System.err.printf("SEMANTIC ERROR (%d): variable '%s' already declared at line %d.\n", line, text,
-					vt.getLine(idx));
+		VarEntry entry = sh.lookupVar(varName);
+		if (entry != null) {
+			System.err.printf("SEMANTIC ERROR (%d): variable '%s' already declared at line %d.\n", line, varName,
+					entry.line);
 			System.exit(1);
 			return; // Never reached.
 		}
 		if (isArray) {
-			newArray(text, line, type);
+			newArray(varName, line, type);
 		} else if (isFunction) {
-			newFunc(text, line, type);
+			newFunc(varName, line, type);
 		} else {
-			vt.addVar(text, line, type);
+			vt.addVar(varName, line, sh.scopeDepth, type);
+			sh.addVar(varName, line, type);
 		}
 	}
 
 	private void newFunc(String text, int line, Type type) {
-		vt.addVar(text, line, type, SpecialType.FUNCTION);
+		vt.addVar(text, line, sh.scopeDepth, type, SpecialType.FUNCTION);
+		sh.addVar(text, line, type, SpecialType.FUNCTION);
 		isFunction = false;
 	}
 
 	private void newArray(String text, int line, Type type) {
-		vt.addVar(text, line, type, SpecialType.ARRAY);
+		vt.addVar(text, line, sh.scopeDepth, type, SpecialType.ARRAY);
+		sh.addVar(text, line, type, SpecialType.ARRAY);
 		isArray = false;
 	}
 
@@ -110,6 +116,13 @@ public class SemanticChecker extends GOParserBaseVisitor<Void> {
 		System.out.print(vt);
 		System.out.print("\n\n");
 	}
+
+	@Override
+	public Void visitProgram(GOParser.ProgramContext ctx) {
+		sh.push();
+		return visitChildren(ctx); 
+	}
+
 
 	@Override
 	public Void visitAssignee(GOParser.AssigneeContext ctx) {
@@ -222,21 +235,41 @@ public class SemanticChecker extends GOParserBaseVisitor<Void> {
 
 	@Override
 	public Void visitFunction_decl(GOParser.Function_declContext ctx) {
-		visit(ctx.parameters());
-		isFunction = true;
 		if(ctx.result() != null) 
 			visit(ctx.result());
 		else
 			lastDeclType = Type.INT_TYPE;
-		
+		isFunction = true;
 		newVar(ctx.ID().getSymbol(),lastDeclType);
 
+		sh.push();
+		visit(ctx.parameters());
 
 		if(ctx.block() != null) {
 			visit(ctx.block());
 		}
+
+		sh.pop();
 		return null;
 	}
+
+	@Override
+	public Void visitFor_stmt(GOParser.For_stmtContext ctx) {
+		sh.push();
+		visitChildren(ctx);
+		sh.pop();
+		return null;
+	}
+
+	@Override
+	public Void visitIf_stmt(GOParser.If_stmtContext ctx) {
+		sh.push();
+		visitChildren(ctx);
+		sh.pop();
+		return null;
+	}
+
+
 
 	@Override
 	public Void visitArrayType(GOParser.ArrayTypeContext ctx) {
