@@ -6,7 +6,7 @@ func main() {
 	b = 2
 	if a == 1 {
 		for a <= b {
-			println(a)
+			fmt.Println(a)
 			a++
 		}
 	}

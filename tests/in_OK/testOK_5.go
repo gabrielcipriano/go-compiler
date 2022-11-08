@@ -2,6 +2,10 @@ package main
 
 import "fmt"
 
+func getWorld() string{
+	return "world"
+}
+
 func main() {
 	var a int
 	var b string

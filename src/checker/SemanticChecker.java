@@ -10,6 +10,7 @@ import parser.GOParserBaseVisitor;
 import tables.StrTable;
 import tables.VarTable;
 import typing.Type;
+import typing.SpecialType;
 
 /*
  * Analisador semântico de EZLang implementado como um visitor
@@ -45,7 +46,9 @@ public class SemanticChecker extends GOParserBaseVisitor<Void> {
 
 	private Type lastInferType; // Variável "global" com o último tipo inferido.
 	private Type lastDeclType; // Variável "global" com o último tipo declarado.
-	private boolean infer = true;
+	private boolean infer = false;
+	private boolean isArray = false;
+	private boolean isFunction = false;
 	// Testa se o dado token foi declarado antes.
 	private Type checkVar(Token token) {
 		String text = token.getText();
@@ -53,6 +56,16 @@ public class SemanticChecker extends GOParserBaseVisitor<Void> {
 		int idx = vt.lookupVar(text);
 		if (idx == -1) {
 			System.err.printf("SEMANTIC ERROR (%d): variable '%s' was not declared.\n", line, text);
+			System.exit(1);
+			return null; // Never reached.
+		}
+		if (isArray && vt.getSpecialType(idx) != SpecialType.ARRAY) {
+			System.err.printf("SEMANTIC ERROR (%d): variable '%s' is not an array.\n", line, text);
+			System.exit(1);
+			return null; // Never reached.
+		}
+		if (isFunction && vt.getSpecialType(idx) != SpecialType.FUNCTION) {
+			System.err.printf("SEMANTIC ERROR (%d): variable '%s' is not a function.\n", line, text);
 			System.exit(1);
 			return null; // Never reached.
 		}
@@ -70,7 +83,23 @@ public class SemanticChecker extends GOParserBaseVisitor<Void> {
 			System.exit(1);
 			return; // Never reached.
 		}
-		vt.addVar(text, line, type);
+		if (isArray) {
+			newArray(text, line, type);
+		} else if (isFunction) {
+			newFunc(text, line, type);
+		} else {
+			vt.addVar(text, line, type);
+		}
+	}
+
+	private void newFunc(String text, int line, Type type) {
+		vt.addVar(text, line, type, SpecialType.FUNCTION);
+		isFunction = false;
+	}
+
+	private void newArray(String text, int line, Type type) {
+		vt.addVar(text, line, type, SpecialType.ARRAY);
+		isArray = false;
 	}
 
 	// Exibe o conteúdo das tabelas em stdout.
@@ -84,17 +113,12 @@ public class SemanticChecker extends GOParserBaseVisitor<Void> {
 
 	@Override
 	public Void visitAssignee(GOParser.AssigneeContext ctx) {
-		// if(ctx)
-		// newVar(ctx.ID().getSymbol());
 		checkVar(ctx.ID().getSymbol());
-
 		return null;
 	}
 
 	@Override
 	public Void visitIdentifier_list(GOParser.Identifier_listContext ctx) {
-		// checkVar(ctx.ID());
-
 		for (TerminalNode id : ctx.ID()) {
 			if (infer) {
 				newVar(id.getSymbol(), typeQueue.removeFirst());
@@ -106,7 +130,15 @@ public class SemanticChecker extends GOParserBaseVisitor<Void> {
 	}
 
 	@Override
-	public Void visitVar_spec(GOParser.Var_specContext ctx) {
+	public Void visitParameterDecl(GOParser.ParameterDeclContext ctx) {
+		infer = false;
+		visit(ctx.type());
+		visit(ctx.identifier_list());
+		return null;
+	}
+
+	@Override
+	public Void visitVar_spec(GOParser.Var_specContext ctx) { // var a, b int
 		infer = false;
 		visit(ctx.type());
 		if (ctx.expr_list() != null) {
@@ -167,7 +199,7 @@ public class SemanticChecker extends GOParserBaseVisitor<Void> {
 		//list lastDeclType<Type>
 
 		// TODO Comparar a lista de variáveis com a lista de valores(quantidade)
-
+		lastDeclType = Type.INFERED_TYPE;
 		visitChildren(ctx);
 		return null;
 	}
@@ -176,16 +208,62 @@ public class SemanticChecker extends GOParserBaseVisitor<Void> {
 	public Void visitExpr_list(GOParser.Expr_listContext ctx) { 
 		 /* TODO Precisamos pegar o tipo do valor que está sendo atribuído
 		mesmo no caso de experssões e índices */
-
-		/*if(shortDeclare){
-			for(int i = 0; i < ctx.expr().size(); i++){
-				this.lastDeclType = ctx.
-				
-			}
-		}*/
 		visitChildren(ctx);
 		return null;
-	 }
+	}
+
+	@Override
+	public Void visitLiteral(GOParser.LiteralContext ctx) {
+		if(ctx.basic != null && ctx.basic.getType() == GOParser.STR_LIT) {
+			st.add(ctx.basic.getText());
+		}
+		return null;
+	}
+
+	@Override
+	public Void visitFunction_decl(GOParser.Function_declContext ctx) {
+		visit(ctx.parameters());
+		isFunction = true;
+		if(ctx.result() != null) 
+			visit(ctx.result());
+		else
+			lastDeclType = Type.INT_TYPE;
+		
+		newVar(ctx.ID().getSymbol(),lastDeclType);
+
+
+		if(ctx.block() != null) {
+			visit(ctx.block());
+		}
+		return null;
+	}
+
+	@Override
+	public Void visitArrayType(GOParser.ArrayTypeContext ctx) {
+		this.isArray = true;
+		return visitChildren(ctx);
+	}
+
+
+	@Override
+	public Void visitOperandExpr(GOParser.OperandExprContext ctx) {
+		if(ctx.index() != null  ){
+			isArray  = true;
+			visit(ctx.operand());
+			isArray = false;
+			visit(ctx.index());
+			return null;
+		}
+		if(ctx.arguments() != null  ){
+			isFunction = true;
+			visit(ctx.operand());
+			isFunction = false;
+			visit(ctx.arguments());
+			return null;
+		}
+		visitChildren(ctx);
+		return null;
+	}
 
 	// // Visita a regra type_spec: BOOL
 	// // Note que esse método só foi criado pelo ANTLR porque a regra da

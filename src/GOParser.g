@@ -40,10 +40,10 @@ expr_list:
   expr (COMMA expr)*;
 
 expr: 
-  operand	(index	| arguments)?							# operandExpr
-| unary_op = (PLUS | MINUS | NOT) expr 			# unary
+  operand (index	| arguments)?						# operandExpr
+| unary_op = (PLUS | MINUS | NOT) expr 					# unary
 | expr mul_op = (STAR | DIV) expr						# multDiv
-| expr add_op = (PLUS | MINUS) expr					# plusMinus
+| expr add_op = (PLUS | MINUS) expr						# plusMinus
 | expr rel_op = (
     EQ_EQ 
   | NOT_EQ
@@ -51,9 +51,9 @@ expr:
   | LESS_EQ
   | GREATER
   | GREATER_EQ
-) expr 																			# relation
-| expr AND_AND expr													# and
-| expr OR expr															# or
+) expr 													# relation
+| expr AND_AND expr										# and
+| expr OR expr											# or
 ;
 
 // primary_expr:
@@ -86,12 +86,8 @@ statement:
 print:
 	PRINT L_PR expr_list R_PR;
 
-function_decl: FUNC ID (signature block?);
+function_decl: FUNC ID parameters result? block?;
 
-signature:
-	parameters result
-	| parameters;
-	
 parameters:
 	L_PR (parameterDecl (COMMA parameterDecl)* COMMA?)? R_PR;
 
@@ -100,7 +96,7 @@ arguments:
 
 parameterDecl: identifier_list? type;
 
-result: parameters | type;
+result: type | L_PR type (COMMA type)* R_PR;
 
 // declaration: const_decl | var_decl;
 
@@ -151,14 +147,17 @@ operand:
 	ID;
 
 literal:
-	basic = (
-	NIL_LIT
+basic = (
+  NIL_LIT
 | INT_LIT
 | STR_LIT
 | FLOAT_LIT
 | TRUE_LIT
-| FALSE_LIT ) | array_type literal_array 
+| FALSE_LIT
+)
+| array_type literal_array 
 ;
+
 
 // composite_lit: array_type literal_array;
 
@@ -179,7 +178,7 @@ element_list: expr (COMMA expr)*;
 
 type_name: ID;
 
-array_type: L_BRACKETS expr R_BRACKETS type;
+array_type: L_BRACKETS INT_LIT R_BRACKETS type;
 
 type:
   INT 							# intType
