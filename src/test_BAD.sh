@@ -6,7 +6,7 @@ GRAMMAR_NAME=GO
 GEN_PATH=$ROOT/src
 GEN_PACKAGE=parser
 DATA=$ROOT/tests
-IN=$DATA/in_OK
+IN=$DATA/in_BAD
 OUT=$DATA/out
 cd $GEN_PATH
 for infile in `ls $IN/*.go`; do
@@ -14,5 +14,5 @@ for infile in `ls $IN/*.go`; do
   outfile=$OUT/${base/.go/.out}
   echo Running $base
   # /usr/bin/env /usr/lib/jvm/java-11-openjdk-amd64/bin/java @/tmp/cp_1a318z5kum1cicb8dttgo494v.argfile Main $infile > $outfile
-  make run FILE="$infile" > $outfile
+  make run FILE="$infile" 2> $outfile
 done
