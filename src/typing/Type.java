@@ -6,7 +6,8 @@ public enum Type {
 	FLOAT32_TYPE("float32"),
 	STRING_TYPE("string"),
 	BOOLEAN_TYPE("bool"),
-	INFERED_TYPE("infer");
+	INFERED_TYPE("infer"),
+	NIL_TYPE("nil");
 
 	private String name;
 
@@ -33,10 +34,26 @@ public enum Type {
 				return "string";
 			case INFERED_TYPE:
 				return "infer";
+			case NIL_TYPE:
+			 return "nil";
 			default:
 				System.err.println("ERROR: Fall through in Type enumeration!");
 				System.exit(1);
 				return ""; // Never reached.
 		}
+	}
+
+	private static boolean isNumber(Type type ) {
+		return type == INT_TYPE || type == FLOAT32_TYPE;
+	}
+
+	public static Type numberTypeWidening(Type left, Type right) {
+		if(!isNumber(left) || !isNumber(right)) {
+			return null;
+		}
+		if (left == FLOAT32_TYPE || right == FLOAT32_TYPE) {
+			return FLOAT32_TYPE;
+		}
+		return INT_TYPE;
 	}
 }

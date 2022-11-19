@@ -141,9 +141,9 @@ expression_stmt: expr;
 shortVar_decl: identifier_list SHORT_VAR_DECL expr_list;
 
 operand:
- literal | operand_name | L_PR expr R_PR;
+  literal | operand_name | L_PR expr R_PR;
 
- operand_name:
+operand_name:
 	ID;
 
 literal:
