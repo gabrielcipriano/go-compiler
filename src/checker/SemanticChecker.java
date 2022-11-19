@@ -16,6 +16,12 @@ import tables.StrTable;
 import tables.VarEntry;
 import tables.VarTable;
 import typing.Type;
+import static typing.Type.INT_TYPE;
+import static typing.Type.FLOAT32_TYPE;
+import static typing.Type.BOOLEAN_TYPE;
+import static typing.Type.STRING_TYPE;
+import static typing.Type.INFERED_TYPE;
+
 import typing.SpecialType;
 
 /*
@@ -59,11 +65,11 @@ public class SemanticChecker extends GOParserBaseVisitor<Type> {
 
 	private static Map<Integer, Type> basicLitTypeMap = Map.of(
 		GOParser.NIL_LIT, null,
-		GOParser.INT_LIT, Type.INT_TYPE,
-		GOParser.STR_LIT, Type.STRING_TYPE,
-		GOParser.FLOAT_LIT, Type.FLOAT32_TYPE,
-		GOParser.TRUE_LIT, Type.BOOLEAN_TYPE,
-		GOParser.FALSE_LIT, Type.BOOLEAN_TYPE
+		GOParser.INT_LIT, INT_TYPE,
+		GOParser.STR_LIT, STRING_TYPE,
+		GOParser.FLOAT_LIT, FLOAT32_TYPE,
+		GOParser.TRUE_LIT, BOOLEAN_TYPE,
+		GOParser.FALSE_LIT, BOOLEAN_TYPE
 	);
 
 	// Testa se o dado token foi declarado antes.
@@ -131,6 +137,14 @@ public class SemanticChecker extends GOParserBaseVisitor<Type> {
 		System.out.print("\n\n");
 	}
 
+	private void mismatchedOperationError(String text, int line, Type typeA, Type typeB) {
+		System.err.printf(
+			"SEMANTIC ERROR [Invalid operation] (%d):  %s (mismatched types %s and %s for operation.).\n", 
+			line, text, typeA.toString(), typeB.toString()
+		);
+		System.exit(1);
+	}
+
 	@Override
 	public Type visitProgram(GOParser.ProgramContext ctx) {
 		sh.push();
@@ -189,22 +203,22 @@ public class SemanticChecker extends GOParserBaseVisitor<Type> {
 
 	@Override
 	public Type visitFloatType(GOParser.FloatTypeContext ctx) {
-		return Type.FLOAT32_TYPE;
+		return FLOAT32_TYPE;
 	}
 
 	@Override
 	public Type visitIntType(GOParser.IntTypeContext ctx) {
-		return Type.INT_TYPE;
+		return INT_TYPE;
 	}
 
 	@Override
 	public Type visitStringType(GOParser.StringTypeContext ctx) {
-		return Type.STRING_TYPE;
+		return STRING_TYPE;
 	}
 
 	@Override
 	public Type visitBoolType(GOParser.BoolTypeContext ctx) {
-		return Type.BOOLEAN_TYPE;
+		return BOOLEAN_TYPE;
 	}
 
 	@Override
@@ -220,7 +234,7 @@ public class SemanticChecker extends GOParserBaseVisitor<Type> {
 		//list lastDeclType<Type>
 
 		// TODO Comparar a lista de variáveis com a lista de valores(quantidade)
-		lastDeclType = Type.INFERED_TYPE;
+		lastDeclType = INFERED_TYPE;
 		visitChildren(ctx);
 		return null;
 	}
@@ -241,7 +255,7 @@ public class SemanticChecker extends GOParserBaseVisitor<Type> {
 		// if(ctx.basic.getType() == GOParser.STR_LIT) {
 		// 	st.add(ctx.basic.getText());
 		// }
-		// return Type.STRING_TYPE;
+		// return STRING_TYPE;
 	}
 
 	// @Override
@@ -253,7 +267,7 @@ public class SemanticChecker extends GOParserBaseVisitor<Type> {
 		if (ctx.result() != null) 
 			visit(ctx.result());
 		else
-			lastDeclType = Type.INT_TYPE;
+			lastDeclType = INT_TYPE;
 		isFunction = true;
 		newVar(ctx.ID().getSymbol(),lastDeclType);
 
@@ -312,33 +326,95 @@ public class SemanticChecker extends GOParserBaseVisitor<Type> {
 	@Override
 	public Type visitUnary(GOParser.UnaryContext ctx) {
 		Type type = visitChildren(ctx);
-		if (ctx.NOT() != null && type != Type.BOOLEAN_TYPE) {
+		if (ctx.NOT() != null && type != BOOLEAN_TYPE) {
 			// TODO: TYPE ERROR (NOT expects boolean)
 		}
-		if (type != Type.INT_TYPE && type != Type.FLOAT32_TYPE) {
+		if (type != INT_TYPE && type != FLOAT32_TYPE) {
 			// TODO: TYPE ERROR (MINUS and PLUS expects number)
 		}
 		return type;
 	}
 
 	private boolean isNumber(Type type ) {
-		return type == Type.INT_TYPE || type == Type.FLOAT32_TYPE;
+		return type == INT_TYPE || type == FLOAT32_TYPE;
 	}
 
 	private Type numberTypeWidening(Type left, Type right) {
 		if(!isNumber(left) || !isNumber(right)) {
-			// TODO: TYPE ERROR (expects number)
+			return null;
 		}
-
-		if (left == Type.FLOAT32_TYPE || right == Type.FLOAT32_TYPE) {
-			return Type.FLOAT32_TYPE;
+		if (left == FLOAT32_TYPE || right == FLOAT32_TYPE) {
+			return FLOAT32_TYPE;
 		}
-		return Type.INT_TYPE;
+		return INT_TYPE;
 	}
 
 	@Override
 	public Type visitMultDiv(GOParser.MultDivContext ctx) {
-		return numberTypeWidening(visit(ctx.expr(0)), visit(ctx.expr(1)));
+		Type left = visit(ctx.expr(0));
+		Type right = visit(ctx.expr(1));
+		Type type = numberTypeWidening(left, right);
+		if (type == null) {
+			// TODO: VALIDADE - TYPE ERROR (mismatched types X and Y)
+			mismatchedOperationError(ctx.getText(), ctx.start.getLine(), left, right);
+		}
+		return type;
+	}
+
+	@Override
+	public Type visitPlusMinus(GOParser.PlusMinusContext ctx) {
+		Type left = visit(ctx.expr(0));
+		Type right = visit(ctx.expr(1));
+
+		if (left == STRING_TYPE && right == STRING_TYPE && ctx.PLUS() != null) {
+			return STRING_TYPE;
+		}
+
+		Type type = numberTypeWidening(left, right);
+		if (type == null) {
+			// TODO: VALIDADE - TYPE ERROR (mismatched types X and Y)
+			mismatchedOperationError(ctx.getText(), ctx.start.getLine(), left, right);
+		}
+		return type;
+	}
+
+	@Override
+	public Type visitRelation(GOParser.RelationContext ctx) {
+		Type left = visit(ctx.expr(0));
+		Type right = visit(ctx.expr(1));
+
+		if (left == STRING_TYPE && right == STRING_TYPE) {
+			return STRING_TYPE;
+		}
+
+		Type type = numberTypeWidening(left, right);
+		if (type == null) {
+			// TODO: VALIDADE - TYPE ERROR (mismatched types X and Y)
+			mismatchedOperationError(ctx.getText(), ctx.start.getLine(), left, right);
+		}
+		return type;
+	}
+
+	@Override
+	public Type visitAnd(GOParser.AndContext ctx) {
+		Type left = visit(ctx.expr(0));
+		Type right = visit(ctx.expr(1));
+
+		if (left != BOOLEAN_TYPE || right != BOOLEAN_TYPE) {
+			mismatchedOperationError(ctx.getText(), ctx.start.getLine(), left, right);
+		}
+		return BOOLEAN_TYPE;
+	}
+
+	@Override
+	public Type visitOr(GOParser.OrContext ctx) {
+		Type left = visit(ctx.expr(0));
+		Type right = visit(ctx.expr(1));
+
+		if (left != BOOLEAN_TYPE || right != BOOLEAN_TYPE) {
+			mismatchedOperationError(ctx.getText(), ctx.start.getLine(), left, right);
+		}
+		return BOOLEAN_TYPE;
 	}
 
 }

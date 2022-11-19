@@ -41,9 +41,9 @@ expr_list:
 
 expr: 
   operand (index	| arguments)?						# operandExpr
-| unary_op = (PLUS | MINUS | NOT) expr 					# unary
-| expr mul_op = (STAR | DIV) expr						# multDiv
-| expr add_op = (PLUS | MINUS) expr						# plusMinus
+| unary_op = (PLUS | MINUS | NOT) expr 		# unary
+| expr mul_op = (STAR | DIV) expr					# multDiv
+| expr add_op = (PLUS | MINUS) expr				# plusMinus
 | expr rel_op = (
     EQ_EQ 
   | NOT_EQ
@@ -51,9 +51,9 @@ expr:
   | LESS_EQ
   | GREATER
   | GREATER_EQ
-) expr 													# relation
-| expr AND_AND expr										# and
-| expr OR expr											# or
+) expr 																		# relation
+| expr AND_AND expr												# and
+| expr OR expr														# or
 ;
 
 // primary_expr:
