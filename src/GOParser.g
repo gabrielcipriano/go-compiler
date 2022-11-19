@@ -154,8 +154,8 @@ basic = (
 | FLOAT_LIT
 | TRUE_LIT
 | FALSE_LIT
-)
-| array_type literal_array 
+)															# basicLiteral
+| array_type literal_array    # arrayLiteral
 ;
 
 
