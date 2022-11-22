@@ -94,7 +94,7 @@ parameters:
 arguments:
 	L_PR expr_list? R_PR;
 
-parameterDecl: ID type;
+parameterDecl: ID type; // simplifying parameter declaration
 
 result: type | L_PR type (COMMA type)* R_PR;
 
