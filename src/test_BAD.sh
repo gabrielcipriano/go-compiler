@@ -1,5 +1,5 @@
 #!/bin/bash
-ROOT=/home/rtfsmonteiro/Documents/go-compiler
+ROOT=/home/ryan/Documents/2022-2/Compiladores/go-compiler
 ANTLR_PATH=$ROOT/tools/antlr-4.11.1-complete.jar
 CLASS_PATH_OPTION="-cp .:$ANTLR_PATH"
 GRAMMAR_NAME=GO

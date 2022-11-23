@@ -2,6 +2,7 @@ package tables;
 
 import java.util.ArrayList;
 import java.util.Formatter;
+import java.util.LinkedList;
 import java.util.List;
 
 import typing.Type;
@@ -31,6 +32,13 @@ public final class VarTable {
 	}
 
 	public int addVar(String s, int line, int scope, Type type, SpecialType special) {
+		Entry entry = new Entry(s, line, scope, type, special);
+		int idxAdded = table.size();
+		table.add(entry);
+		return idxAdded;
+	}
+
+	public int addVar(String s, int line, int scope, Type type, SpecialType special,LinkedList<Type> funcArgs,LinkedList<Type> funcReturns) {
 		Entry entry = new Entry(s, line, scope, type, special);
 		int idxAdded = table.size();
 		table.add(entry);

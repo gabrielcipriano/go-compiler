@@ -9,7 +9,9 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import parser.GOParser;
+import parser.GOParser.AssigneeContext;
 import parser.GOParser.ExprContext;
+import parser.GOParser.ParameterDeclContext;
 import parser.GOParser.TypeContext;
 import parser.GOParserBaseVisitor;
 import tables.ScopeHandler;
@@ -57,9 +59,8 @@ public class SemanticChecker extends GOParserBaseVisitor<Type> {
 	private VarTable vt = new VarTable(); // Tabela de variáveis.
 	private ScopeHandler sh = new ScopeHandler();
 
-	private LinkedList<Type> typeQueue = new LinkedList<Type>();
+	private LinkedList<Type> exprTypesQueue = new LinkedList<Type>();
 
-	private Type lastInferType; // Variável "global" com o último tipo inferido.
 	private Type lastDeclType; // Variável "global" com o último tipo declarado.
 	private boolean infer = false;
 	private boolean isArray = false;
@@ -73,6 +74,7 @@ public class SemanticChecker extends GOParserBaseVisitor<Type> {
 		GOParser.TRUE_LIT, BOOLEAN_TYPE,
 		GOParser.FALSE_LIT, BOOLEAN_TYPE
 	);
+	private String text;
 
 	// Testa se o dado token foi declarado antes.
 	private Type checkVar(Token token) {
@@ -87,12 +89,36 @@ public class SemanticChecker extends GOParserBaseVisitor<Type> {
 			System.err.printf("SEMANTIC ERROR (%d): variable '%s' is not an array.\n", line, varName);
 			System.exit(1);
 		}
-		if (isFunction && entry.special != SpecialType.FUNCTION) {
-			System.err.printf("SEMANTIC ERROR (%d): variable '%s' is not a function.\n", line, varName);
-			System.exit(1);
+		if (isFunction) {
+			if (entry.special != SpecialType.FUNCTION) {
+				System.err.printf("SEMANTIC ERROR (%d): variable '%s' is not a function.\n", line, varName);
+				System.exit(1);
+			}
+			if(entry.funcReturn.size() == 0) {
+				StringBuilder sb = new StringBuilder();
+				for (Type t : entry.funcReturn) {
+					sb.append(t);
+					sb.append(", ");
+				}
+				 
+				System.err.printf("SEMANTIC ERROR (%d): '%s' (%s) used as value.\n", line, varName,sb.toString());
+				System.exit(1);
+			}
+			if(entry.funcReturn.size() > 1) {
+				StringBuilder sb = new StringBuilder();
+				for (Type t : entry.funcReturn) {
+					sb.append(t);
+					sb.append(", ");
+				}
+				System.err.printf("SEMANTIC ERROR (%d): multiple-value '%s'(value of type(%s)).\n", line, varName,sb);
+				System.exit(1);
+			}
+			return entry.funcReturn.get(0);
 		}
 		return entry.type;
 	}
+
+	
 
 	// Cria uma nova variável a partir do dado token.
 	private void newVar(Token token, Type type) {
@@ -151,6 +177,20 @@ public class SemanticChecker extends GOParserBaseVisitor<Type> {
 		System.exit(1);
 	}
 
+	private void assignmentMismatchError(int line, String txt, int vars, int vals) {
+		System.err.printf(
+			"SEMANTIC ERROR [assignment mismatch] (%d):  %s (%d variables but %d value).\n", 
+			line, txt, vars, vals);
+		System.exit(1);
+	}
+
+	private void assignDifferentTypeError(int line, String txtVal, Type valType, Type varType) {
+		System.err.printf(
+			"SEMANTIC ERROR (%d):  cannot use %s (%s) as %s value in variable declaration/assignment.\n", 
+			line, txtVal, valType.getName(), varType.getName());
+		System.exit(1);
+	};
+
 	@Override
 	public Type visitProgram(GOParser.ProgramContext ctx) {
 		sh.push();
@@ -163,16 +203,37 @@ public class SemanticChecker extends GOParserBaseVisitor<Type> {
 		return checkVar(ctx.ID().getSymbol());
 	}
 
+	private LinkedList<Type> getExprTypes(GOParser.Expr_listContext ctx) {
+		LinkedList<Type> exprTypes = new LinkedList<Type>();
 	
+		for (ExprContext exprCtx : ctx.expr())
+			exprTypes.add(visit(exprCtx));
+		return exprTypes;
+	}
 
 	// TODO: verificar se os tipos das expressões estão batendo com os tipos dos identificadores
 
 	@Override
 	public Type visitAssignment(GOParser.AssignmentContext ctx) {
-		LinkedList<Type> exprTypes = new LinkedList<Type>();
-	
-		for (ExprContext exprCtx : ctx.expr_list().expr())
-			exprTypes.add(visit(exprCtx));
+		LinkedList<Type> exprTypes = getExprTypes(ctx.expr_list());
+
+		int exprSz = exprTypes.size();
+		int valsSz = ctx.assignee_list().assignee().size();
+
+		if(exprSz != valsSz)
+			assignmentMismatchError(ctx.start.getLine(), ctx.getText(), exprSz, valsSz);
+		
+		for (AssigneeContext assignee : ctx.assignee_list().assignee()) {
+			if (assignee.index() != null)
+				isArray = true;
+			Type assignType = checkVar(assignee.ID().getSymbol());
+			Type exprType = exprTypes.removeFirst();
+
+			if (assignType == exprType || (assignType == FLOAT32_TYPE && exprType == INT_TYPE))
+				continue;
+			
+			assignDifferentTypeError(ctx.start.getLine(), ctx.expr_list().getText(), exprType, assignType);
+		}
 
 		return visitChildren(ctx);
 	}
@@ -181,7 +242,7 @@ public class SemanticChecker extends GOParserBaseVisitor<Type> {
 	public Type visitIdentifier_list(GOParser.Identifier_listContext ctx) {
 		for (TerminalNode id : ctx.ID()) {
 			if (infer) {
-				newVar(id.getSymbol(), typeQueue.removeFirst());
+				// newVar(id.getSymbol(), typeQueue.removeFirst());
 			} else {
 				newVar(id.getSymbol(), lastDeclType);
 			}
@@ -193,12 +254,12 @@ public class SemanticChecker extends GOParserBaseVisitor<Type> {
 	public Type visitParameterDecl(GOParser.ParameterDeclContext ctx) {
 		infer = false;
 		this.lastDeclType = visit(ctx.type());
-		visit(ctx.identifier_list());
+		// visit(ctx.identifier_list());
 		return null;
 	}
 
 	@Override
-	public Type visitVar_spec(GOParser.Var_specContext ctx) { // var a, b int
+	public Type visitVar_spec(GOParser.Var_specContext ctx) { // var a, b int = 1, 2
 		infer = false;
 		this.lastDeclType = visit(ctx.type());
 		LinkedList<Type> exprTypes = new LinkedList<Type>();
@@ -301,14 +362,21 @@ public class SemanticChecker extends GOParserBaseVisitor<Type> {
 	@Override
 	public Type visitFunction_decl(GOParser.Function_declContext ctx) {
 		LinkedList<Type> resultTypes = new LinkedList<Type>();
+		LinkedList<Type> argsTypes = new LinkedList<Type>();
+
+		if (ctx.parameters() != null)
+			for (ParameterDeclContext paramCtx : ctx.parameters().parameterDecl())
+				argsTypes.add(visit(paramCtx.ID()));
+		else
+			resultTypes.add(NIL_TYPE);
 
 		if (ctx.result() != null)
 			for (TypeContext typeCtx : ctx.result().type())
 				resultTypes.add(visit(typeCtx));
 		else
-			resultTypes.add(INT_TYPE);
+			resultTypes.add(NIL_TYPE);
 
-		isFunction = true;
+		isFunction = true; 
 		newVar(ctx.ID().getSymbol(), resultTypes.getFirst()); // TODO: Function table
 
 		sh.push();
@@ -349,14 +417,39 @@ public class SemanticChecker extends GOParserBaseVisitor<Type> {
 			isArray = true;
 			Type type = visit(ctx.operand());
 			isArray = false;
-			visit(ctx.index());
+			visit(ctx.index()); // TODO verificar se index é um inteiro
 			return type;
 		}
-		if(ctx.arguments() != null){ // TODO: checar argumentos expr_list com assinatura da funcao
+		if(ctx.arguments() != null){
 			isFunction = true;
-			Type type = visit(ctx.operand());
+			Token nameFunc = ctx.operand().operand_name().ID().getSymbol();
+			checkVar(nameFunc);
 			isFunction = false;
-			visit(ctx.arguments());
+			// visit(ctx.arguments());
+			LinkedList<Type> argumentsTypes = getExprTypes(ctx.arguments().expr_list());
+			text = nameFunc.getText();
+			if(sh.lookupVar(text).funcParams.size() != argumentsTypes.size()){
+				StringBuilder sb = new StringBuilder();
+				for (Type t : sh.lookupVar(text).funcReturn) {
+					sb.append(t);
+					sb.append(", ");
+				}
+				StringBuilder sb2 = new StringBuilder();
+				for (Type t : argumentsTypes) {
+					sb2.append(t);
+					sb2.append(", ");
+				}
+
+				String qtt = sh.lookupVar(text).funcParams.size() > argumentsTypes.size()
+					? "not enough" 
+					: "too many";
+				System.err.printf("SEMANTIC ERROR (%d): %s arguments in call to %s\n \t have(%s)\n\t want(%s)",
+									nameFunc.getLine(),qtt,text,sb2,sb);
+				System.exit(1);
+			}
+			for (int index = 0; index < argumentsTypes.size() ; index++) {
+				//TODO comparar cada tipo dos argumentos
+			}
 			return type;
 		}
 		return visit(ctx.operand());

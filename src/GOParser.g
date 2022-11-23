@@ -89,12 +89,12 @@ print:
 function_decl: FUNC ID parameters result? block?;
 
 parameters:
-	L_PR (parameterDecl (COMMA parameterDecl)* COMMA?)? R_PR;
+	L_PR (parameterDecl (COMMA parameterDecl)*)? R_PR;
 
 arguments:
-	 L_PR expr_list? R_PR;
+	L_PR expr_list? R_PR;
 
-parameterDecl: identifier_list? type;
+parameterDecl: ID type;
 
 result: type | L_PR type (COMMA type)* R_PR;
 
