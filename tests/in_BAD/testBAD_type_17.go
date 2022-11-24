@@ -5,5 +5,5 @@ func foo(a int, b int) (int, int) {
 }
 
 func main() {
-	a := foo(1, 2)
+	var a int = foo(1, 2)
 }

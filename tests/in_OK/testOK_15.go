@@ -1,28 +1,29 @@
 package main
 
-func NewReader(std string){
-  return "tela"
+import "fmt"
+
+func NewReader(std string) string {
+	return "tela"
 }
 
 func main() {
 
-  reader := NewReader("Stdin")
-  fmt.Println("Simple Shell")
-  fmt.Println("---------------------")
+	reader := NewReader("Stdin")
+	fmt.Println("Simple Shell")
+	fmt.Println("---------------------")
 
-  for {
-    // fmt.Println("-> ")
-    // text, _ := ReadString("\n")
-    // // convert CRLF to LF
-    // text = Replace(text, "\n", "", -1 + 8 / 10 - 55)
+	for {
+		// fmt.Println("-> ")
+		// text, _ := ReadString("\n")
+		// // convert CRLF to LF
+		// text = Replace(text, "\n", "", -1 + 8 / 10 - 55)
 
-    // aaa := "\\"
+		// aaa := "\\"
 
-    // if Compare("hi", text) == 0 {
-      fmt.Println("hello, Yourself")
-    // }
+		// if Compare("hi", text) == 0 {
+		fmt.Println("hello, Yourself")
+		// }
 
-  }
+	}
 
 }
-

@@ -77,11 +77,16 @@ statement:
  	| simple_stmt
 	| return_stmt
 	| break_stmt
+	//function_call
 	| continue_stmt
 	// | block
 	| if_stmt
 	| for_stmt
 	| print;
+/*
+function_call:
+	ID arguments
+ */
 
 print:
 	PRINT L_PR expr_list R_PR;
@@ -106,7 +111,13 @@ var_decl: VAR var_spec;
 
 const_spec: identifier_list type ASSIGN expr_list;
 
+// var a int = foo(1, 2)
 var_spec: identifier_list type (ASSIGN expr_list)?;
+
+// funcOrExprList: 
+// 	operand_name parameters
+// 	| L_PR  expr_list R_PR;
+// 	| expr
 
 for_clause:
 	init_stmt = simple_stmt? eos expr eos post_stmt = simple_stmt?;
