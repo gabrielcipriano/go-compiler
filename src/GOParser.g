@@ -136,7 +136,7 @@ if_stmt:
 simple_stmt:
 	inc_dec_stmt
 	| assignment
-	| expression_stmt
+	| funccall_stmt
 	| shortVar_decl;
 
 break_stmt: BREAK ID?;
@@ -147,7 +147,9 @@ inc_dec_stmt: expr (INCREMENT | DECREMENT);
 
 return_stmt: RETURN expr_list?;
 
-expression_stmt: expr;
+// expression_stmt: expr;
+
+funccall_stmt: ID arguments;
 
 shortVar_decl: identifier_list SHORT_VAR_DECL expr_list;
 
