@@ -30,7 +30,7 @@ public final class ScopeHandler {
     return null;
   }
 
-  public Void addVar(String name, int line, Type type, SpecialType special,LinkedList<Type> funcArgs, LinkedList<Type> funcReturns) {
+  public Void addVar(String name, int line, SpecialType special,LinkedList<Type> funcArgs, LinkedList<Type> funcReturns) {
     this.scopes.getLast().add(new VarEntry(name, line, this.scopeDepth, special, funcArgs,funcReturns));
     return null;
   }

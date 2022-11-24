@@ -1,5 +1,10 @@
 package main
 
+func sum(a int, b int) (int, int) {
+	return a, b
+}
+
 func main() {
-	3 + fmt.Println()
+	var a int
+	a = 3 + sum(a, a)
 }

@@ -1,5 +1,7 @@
 package typing;
 
+import java.util.List;
+
 // Enumeração dos tipos primitivos
 public enum Type {
 	INT_TYPE("int"),
@@ -55,5 +57,14 @@ public enum Type {
 			return FLOAT32_TYPE;
 		}
 		return INT_TYPE;
+	}
+
+	public static String listToString(List<Type> types) {
+		StringBuilder sb = new StringBuilder();
+		for (Type t : types) {
+			sb.append(t.toString());
+			sb.append(", ");
+		}
+		return sb.toString();
 	}
 }
