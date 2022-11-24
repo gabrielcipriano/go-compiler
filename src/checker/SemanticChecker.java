@@ -21,7 +21,6 @@ import static typing.Type.INT_TYPE;
 import static typing.Type.FLOAT32_TYPE;
 import static typing.Type.BOOLEAN_TYPE;
 import static typing.Type.STRING_TYPE;
-import static typing.Type.INFERED_TYPE;
 import static typing.Type.NIL_TYPE;
 
 import typing.SpecialType;
@@ -263,7 +262,6 @@ public class SemanticChecker extends GOParserBaseVisitor<Type> {
 		if (exprTypes != null) {
 			int exprSz = exprTypes.size();
 			int valsSz = ctx.identifier_list().ID().size();
-	
 			if(exprSz != valsSz)
 				assignmentMismatchError(ctx.start.getLine(), ctx.getText(), exprSz, valsSz);
 			

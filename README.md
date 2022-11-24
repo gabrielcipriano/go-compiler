@@ -43,6 +43,7 @@ Tipo composto:
 ### Testes
 
 Teste OK:
+
   1. Operações matemáticas
   2. Função composta
 
@@ -58,6 +59,10 @@ Teste OK:
       return 2, 2
     }
     ```
+
+- [ ] Verificação com função de retorno múltiplo
+- [ ] Verificar teste_BAD 18 (Comparação de tipos de retorno d função)
+- [ ] Usar array como variável simples
 
 ## Dicas
 
