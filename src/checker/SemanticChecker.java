@@ -97,7 +97,25 @@ public class SemanticChecker extends GOParserBaseVisitor<Type> {
 		return entry.type;
 	}
 
-	
+	private void checkFuncArguments(VarEntry func, GOParser.ArgumentsContext ctx) {
+		LinkedList<Type> argumentsTypes = getExprTypes(ctx.expr_list());
+
+		if(func.funcParams.size() != argumentsTypes.size()){
+			String expectedParams = Type.listToString(func.funcParams); 
+			String givenParams = Type.listToString(argumentsTypes); 
+			String qtt = func.funcParams.size() > argumentsTypes.size() ? "not enough" : "too many";
+				
+			System.err.printf("SEMANTIC ERROR (%d): %s arguments in call to %s\n \t have (%s)\n\t want (%s)\n",
+				ctx.start.getLine(),qtt,func.name,expectedParams,givenParams);
+			System.exit(1);
+		}
+		for (Type paramType : func.funcParams) {
+			Type atype = argumentsTypes.removeFirst();
+			if (paramType == atype || (paramType == FLOAT32_TYPE && atype == INT_TYPE))
+				continue;
+			diffTypeError(ctx.start.getLine(),"argument to function", ctx.getText(), atype, paramType);
+		}
+	}
 
 	// Cria uma nova variável a partir do dado token.
 	private void newVar(Token token, Type type) {
@@ -226,18 +244,6 @@ public class SemanticChecker extends GOParserBaseVisitor<Type> {
 		return visitChildren(ctx);
 	}
 
-	// @Override // TODO: CHECAR SE NAO PRECISAMOS MAIS
-	// public Type visitIdentifier_list(GOParser.Identifier_listContext ctx) {
-	// 	for (TerminalNode id : ctx.ID()) {
-	// 		if (infer) {
-	// 			// newVar(id.getSymbol(), typeQueue.removeFirst());
-	// 		} else {
-	// 			newVar(id.getSymbol(), lastDeclType);
-	// 		}
-	// 	}
-	// 	return null;
-	// }
-
 	@Override
 	public Type visitParameterDecl(GOParser.ParameterDeclContext ctx) {
 		// infer = false;
@@ -317,35 +323,6 @@ public class SemanticChecker extends GOParserBaseVisitor<Type> {
 			newVar(id.getSymbol(), exprTypes.removeFirst());
 
 		return null;
-
-
-		// a, b := 1, "sim"
-		// var a, b, c int
-		//list lastDeclType<Type>
-		
-		// a, b = foo(), 1- 3, "str"
-		//   		2, 1, 1, 1, 1
-
-		// List<TerminalNode> idList = ctx.identifier_list().ID();
-		// List<ExprContext> exprList = ctx.expr_list().expr();
-
-		// int tamExprList = 0;
-		// for(ExprContext i : exprList){
-			
-		// }
-		// if(idList.size() != exprList.size()){
-		// 	System.err.printf("SEMANTIC ERROR (%d): %s assignment mismatch: %d variable but %d values", ctx.start.getLine(), ctx.getText(), idList.size(), exprList.size());
-		// 	System.exit(1);
-		// }
-
-		// lastDeclType = INFERED_TYPE;
-		// LinkedList<Type> exprTypes = new LinkedList<Type>();
-
-		// for (ExprContext exprCtx : ctx.expr_list().expr())
-		// 	exprTypes.add(visit(exprCtx));
-
-		// visitChildren(ctx);
-		// return null;
 	}
 
 	@Override
@@ -435,6 +412,18 @@ public class SemanticChecker extends GOParserBaseVisitor<Type> {
 	}
 
 	@Override
+	public Type visitFunccall_stmt(GOParser.Funccall_stmtContext ctx) {
+		isFunction = true;
+		checkVar(ctx.ID().getSymbol());
+		isFunction = false;
+
+		VarEntry func = sh.lookupVar(ctx.ID().getText());
+		checkFuncArguments(func, ctx.arguments());
+
+		return null;
+	}
+
+	@Override
 	public Type visitArrayType(GOParser.ArrayTypeContext ctx) {
 		this.isArray = true;
 		return visitChildren(ctx);
@@ -458,21 +447,8 @@ public class SemanticChecker extends GOParserBaseVisitor<Type> {
 			LinkedList<Type> argumentsTypes = getExprTypes(ctx.arguments().expr_list());
 			String funcName = nameFunc.getText();
 			VarEntry func = sh.lookupVar(funcName);
-			if(func.funcParams.size() != argumentsTypes.size()){
-				String expectedParams = Type.listToString(func.funcParams); 
-				String givenParams = Type.listToString(argumentsTypes); 
-				String qtt = func.funcParams.size() > argumentsTypes.size() ? "not enough" : "too many";
-					
-				System.err.printf("SEMANTIC ERROR (%d): %s arguments in call to %s\n \t have (%s)\n\t want (%s)\n",
-					nameFunc.getLine(),qtt,funcName,expectedParams,givenParams);
-				System.exit(1);
-			}
-			for (Type paramType : func.funcParams) {
-				Type atype = argumentsTypes.removeFirst();
-				if (paramType == atype || (paramType == FLOAT32_TYPE && atype == INT_TYPE))
-					continue;
-				diffTypeError(ctx.start.getLine(),"argument to function", ctx.arguments().getText(), atype, paramType);
-			}
+
+			checkFuncArguments(func, ctx.arguments());
 
 			// função em uma expressão deve ter um unico valor de retorno
 			if (func.funcReturn.size() == 1) 
