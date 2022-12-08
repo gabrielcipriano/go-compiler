@@ -1,5 +1,5 @@
 # go-compiler
-
+...
 A go compiler usign ANTLR4 as frontend
 
 Segue abaixo uma lista mínima de elementos que o seu compilador deve tratar corretamente: [link da especificação](https://drive.google.com/file/d/1Ku9tgrp-aOVd1E94wm8Z764ovLIV9VsK/view)
