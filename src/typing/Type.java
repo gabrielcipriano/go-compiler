@@ -8,8 +8,8 @@ public enum Type {
 	FLOAT32_TYPE("float32"),
 	STRING_TYPE("string"),
 	BOOLEAN_TYPE("bool"),
-	INFERED_TYPE("infer"),
-	NIL_TYPE("nil");
+	NIL_TYPE("nil"),
+	NO_TYPE("no_type");
 
 	private String name;
 
@@ -34,10 +34,10 @@ public enum Type {
 				return "bool";
 			case STRING_TYPE:
 				return "string";
-			case INFERED_TYPE:
-				return "infer";
 			case NIL_TYPE:
 			 return "nil";
+			case NO_TYPE:
+			 return "no_type";
 			default:
 				System.err.println("ERROR: Fall through in Type enumeration!");
 				System.exit(1);

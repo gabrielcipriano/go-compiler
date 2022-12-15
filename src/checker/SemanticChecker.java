@@ -1,5 +1,6 @@
 package checker;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
@@ -10,6 +11,7 @@ import parser.GOParser;
 import parser.GOParser.AssigneeContext;
 import parser.GOParser.ExprContext;
 import parser.GOParser.ParameterDeclContext;
+import parser.GOParser.StatementContext;
 import parser.GOParser.TypeContext;
 import parser.GOParserBaseVisitor;
 import tables.ScopeHandler;
@@ -22,39 +24,20 @@ import static typing.Type.FLOAT32_TYPE;
 import static typing.Type.BOOLEAN_TYPE;
 import static typing.Type.STRING_TYPE;
 import static typing.Type.NIL_TYPE;
+import static typing.Type.NO_TYPE;
 
 import typing.SpecialType;
 
-/*
- * Analisador semântico de EZLang implementado como um visitor
- * da ParseTree do ANTLR. A classe GOParserBaseVisitor é gerada
- * automaticamente e já possui métodos padrão aonde o comportamento
- * é visitar todos os filhos. Por conta disto, basta sobreescrever
- * os métodos que a gente quer alterar.
- * 
- * Por enquanto só há uma verificação simples de declaração de
- * variáveis usando uma tabela de símbolos. Funcionalidades adicionais
- * como análise de tipos serão incluídas no próximo laboratório.
- * 
- * O tipo Void indicado na super classe define o valor de retorno dos
- * métodos do visitador. Depois vamos alterar isso para poder construir
- * a AST.
- * 
- * Lembre que em um 'visitor' você é responsável por definir o
- * caminhamento nos filhos de um nó da ParseTree através da chamada
- * recursiva da função 'visit'. Ao contrário do 'listener' que
- * caminha automaticamente em profundidade pela ParseTree, se
- * você não chamar 'visit' nos métodos de visitação, o caminhamento
- * para no nó que você estiver, deixando toda a subárvore do nó atual
- * sem visitar. Tome cuidado neste ponto pois isto é uma fonte
- * muito comum de erros. Veja o método visitAssign_stmt abaixo para
- * ter um exemplo.
- */
-public class SemanticChecker extends GOParserBaseVisitor<Type> {
+import ast.AST;
+import ast.NodeKind;
+
+public class SemanticChecker extends GOParserBaseVisitor<AST> {
 
 	private StrTable st = new StrTable(); // Tabela de strings.
 	private VarTable vt = new VarTable(); // Tabela de variáveis.
 	private ScopeHandler sh = new ScopeHandler();
+
+	private AST ast;
 
 	private LinkedList<Type> exprTypesQueue = new LinkedList<Type>();
 
@@ -74,7 +57,7 @@ public class SemanticChecker extends GOParserBaseVisitor<Type> {
 	private String text; // TODO: ma pq?
 
 	// Testa se o dado token foi declarado antes.
-	private Type checkVar(Token token) {
+	private AST checkVar(Token token) {
 		String varName = token.getText();
 		int line = token.getLine();
 		VarEntry entry = sh.lookupVar(varName);
@@ -93,7 +76,8 @@ public class SemanticChecker extends GOParserBaseVisitor<Type> {
 			}
 			return entry.funcReturn.size() > 0 ? entry.funcReturn.get(0): Type.NIL_TYPE;
 		}
-		return entry.type;
+		//TODO 
+		return new AST(NodeKind.VAR_USE_NODE,0 ,entry.type) ;
 	}
 
 	private void checkFuncArguments(VarEntry func, GOParser.ArgumentsContext ctx) {
@@ -197,14 +181,14 @@ public class SemanticChecker extends GOParserBaseVisitor<Type> {
 	};
 
 	@Override
-	public Type visitProgram(GOParser.ProgramContext ctx) {
+	public AST visitProgram(GOParser.ProgramContext ctx) {
 		sh.push();
-		return visitChildren(ctx); 
+		return visitChildren(ctx);
 	}
 
 
 	@Override
-	public Type visitAssignee(GOParser.AssigneeContext ctx) {
+	public AST visitAssignee(GOParser.AssigneeContext ctx) {
 		return checkVar(ctx.ID().getSymbol());
 	}
 
@@ -324,27 +308,32 @@ public class SemanticChecker extends GOParserBaseVisitor<Type> {
 	}
 
 	@Override
-	public Type visitFloatType(GOParser.FloatTypeContext ctx) {
-		return FLOAT32_TYPE;
+	public AST visitFloatType(GOParser.FloatTypeContext ctx) {
+		float number = Float.parseFloat(ctx.getText());
+		return new AST(NodeKind.FLOAT_LIT_NODE,number,Type.FLOAT32_TYPE);
 	}
 
 	@Override
-	public Type visitIntType(GOParser.IntTypeContext ctx) {
-		return INT_TYPE;
+	public AST visitIntType(GOParser.IntTypeContext ctx) {
+		int number = Integer.parseInt(ctx.getText());
+		return new AST(NodeKind.INT_LIT_NODE,number,Type.INT_TYPE);
 	}
 
 	@Override
-	public Type visitStringType(GOParser.StringTypeContext ctx) {
+	public AST visitStringType(GOParser.StringTypeContext ctx) {
+		String str = ctx.getText();
+		//TODO tabela de String
 		return STRING_TYPE;
 	}
 
 	@Override
-	public Type visitBoolType(GOParser.BoolTypeContext ctx) {
-		return BOOLEAN_TYPE;
+	public AST visitBoolType(GOParser.BoolTypeContext ctx) {
+		int bool = ctx.getText() == "true"? 1 : 0;
+		return new AST(NodeKind.BOOL_LIT_NODE,bool,Type.BOOLEAN_TYPE);
 	}
 
 	@Override
-	public Type visitOperand_name(GOParser.Operand_nameContext ctx) {
+	public AST visitOperand_name(GOParser.Operand_nameContext ctx) {
 		return checkVar(ctx.ID().getSymbol());
 	}	
 
@@ -382,7 +371,7 @@ public class SemanticChecker extends GOParserBaseVisitor<Type> {
 				resultTypes.add(visit(typeCtx));
 
 		newFunc(ctx.ID().getSymbol(),argsTypes,resultTypes); 
-
+		
 		sh.push();
 		visit(ctx.parameters());
 
@@ -394,19 +383,45 @@ public class SemanticChecker extends GOParserBaseVisitor<Type> {
 	}
 
 	@Override
-	public Type visitFor_stmt(GOParser.For_stmtContext ctx) {
+	public AST visitFor_stmt(GOParser.For_stmtContext ctx) {
+		AST blockNode = AST.newSubtree(NodeKind.BLOCK_NODE, NO_TYPE);
+		AST forNode = AST.newSubtree(NodeKind.FOR_NODE, NO_TYPE,blockNode);
 		sh.push();
-		visitChildren(ctx);
+		//TODO criar a arvore para comparação
+		for(StatementContext stmt :ctx.block().statement_list().statement()){
+			AST children = visitChildren(stmt);
+			blockNode.addChild(children);
+		}
 		sh.pop();
-		return null;
+		return forNode;
 	}
 
 	@Override
-	public Type visitIf_stmt(GOParser.If_stmtContext ctx) {
+	public AST visitIf_stmt(GOParser.If_stmtContext ctx) {
+		AST blockNode = AST.newSubtree(NodeKind.BLOCK_NODE, NO_TYPE);
+		AST ifNode = AST.newSubtree(NodeKind.IF_NODE, Type.NO_TYPE,blockNode);
 		sh.push();
-		visitChildren(ctx);
+		//TODO criar a arvore para comparação
+		for(StatementContext stmt :ctx.block(0).statement_list().statement()){
+			AST children = visitChildren(stmt);
+			blockNode.addChild(children);
+		}
+		if(ctx.ELSE() != null){
+			AST elseNode;
+			if(ctx.if_stmt()!= null)
+				elseNode = AST.newSubtree(NodeKind.ELSE_NODE, Type.NO_TYPE,visit(ctx.if_stmt()));
+			else {
+				AST blockElse = AST.newSubtree(NodeKind.BLOCK_NODE, NO_TYPE);
+				elseNode = AST.newSubtree(NodeKind.IF_NODE, Type.NO_TYPE,blockElse);
+				for(StatementContext stmt :ctx.block(1).statement_list().statement()){
+					AST children = visitChildren(stmt);
+					blockElse.addChild(children);
+				}
+			}
+			ifNode.addChild(elseNode);
+		}
 		sh.pop();
-		return null;
+		return ifNode;
 	}
 
 	@Override
@@ -496,56 +511,87 @@ public class SemanticChecker extends GOParserBaseVisitor<Type> {
 	}
 
 	@Override
-	public Type visitPlusMinus(GOParser.PlusMinusContext ctx) {
-		Type left = visit(ctx.expr(0));
-		Type right = visit(ctx.expr(1));
+	public AST visitPlusMinus(GOParser.PlusMinusContext ctx) {
+		AST l = visit(ctx.expr(0));
+		AST r = visit(ctx.expr(1));
+
+		NodeKind node = null;
+
+		if (ctx.PLUS() != null) {
+			node = NodeKind.PLUS_NODE;
+		} else if ( ctx.MINUS() != null) {
+			node = NodeKind.MINUS_NODE;
+		}
 
 		
-		if (left == STRING_TYPE && right == STRING_TYPE && ctx.PLUS() != null)
-			return STRING_TYPE;
+		if (l.type == STRING_TYPE && r.type == STRING_TYPE)
+			return AST.newSubtree(node, STRING_TYPE, l, r);
 
-		Type type = Type.numberTypeWidening(left, right);
+		if (!Type.isBothNumbers(l.type, r.type))
+			mismatchedOperationError(ctx.start.getLine(), ctx.getText(), l.type, r.type);
+
+		if (Type.isI2FWideningNeeded(l.type, r.type)){
+			if (Type.isI2FTarget(l.type) ){
+
+			}
+		}
+				
+		return AST.newSubtree(node, NO_TYPE, l, r);
+	}
+
+	@Override
+	public AST visitRelation(GOParser.RelationContext ctx) {
+		AST left = visit(ctx.expr(0));
+		AST right = visit(ctx.expr(1));
+
+		// Convert from Token to NodeKind
+
+		NodeKind node = null;
+
+		if (ctx.EQ_EQ() != null) {
+			node = NodeKind.EQ_NODE;
+		} else if (ctx.NOT_EQ() != null) {
+			node = NodeKind.NOT_EQ_NODE;			
+		} else if(ctx.LESS() != null) {
+			node = NodeKind.LESS_NODE;
+		} else if(ctx.LESS_EQ() != null) {
+			node = NodeKind.LESS_EQ_NODE; 
+		} else if(ctx.GREATER() != null) {
+			node = NodeKind.GREATER_NODE;
+		} else if(ctx.GREATER_EQ() != null) {
+			node = NodeKind.GREATER_EQ_NODE;
+		}
+
+		if (left.type == STRING_TYPE && right.type == STRING_TYPE)
+			return AST.newSubtree(node, STRING_TYPE, left, right);
+
+		Type type = Type.numberTypeWidening(left.type, right.type);
 		if (type == null)
-			mismatchedOperationError(ctx.start.getLine(), ctx.getText(), left, right);
+			mismatchedOperationError(ctx.start.getLine(), ctx.getText(), left.type, right.type);
 
-		return type;
+		return AST.newSubtree(node, BOOLEAN_TYPE, left, right);
 	}
 
 	@Override
-	public Type visitRelation(GOParser.RelationContext ctx) {
-		Type left = visit(ctx.expr(0));
-		Type right = visit(ctx.expr(1));
+	public AST visitAnd(GOParser.AndContext ctx) {
+		AST l = visit(ctx.expr(0));
+		AST r = visit(ctx.expr(1));
 
-		if (left == STRING_TYPE && right == STRING_TYPE)
-			return STRING_TYPE;
+		if (l.type != BOOLEAN_TYPE || r.type != BOOLEAN_TYPE)
+			mismatchedOperationError(ctx.start.getLine(), ctx.getText(), l.type, r.type);
 
-		Type type = Type.numberTypeWidening(left, right);
-		if (type == null)
-			mismatchedOperationError(ctx.start.getLine(), ctx.getText(), left, right);
-
-		return Type.BOOLEAN_TYPE;
+		return AST.newSubtree(NodeKind.AND_NODE, BOOLEAN_TYPE, l, r);
 	}
 
 	@Override
-	public Type visitAnd(GOParser.AndContext ctx) {
-		Type left = visit(ctx.expr(0));
-		Type right = visit(ctx.expr(1));
+	public AST visitOr(GOParser.OrContext ctx) {
+		AST left = visit(ctx.expr(0));
+		AST right = visit(ctx.expr(1));
 
-		if (left != BOOLEAN_TYPE || right != BOOLEAN_TYPE)
-			mismatchedOperationError(ctx.start.getLine(), ctx.getText(), left, right);
-
-		return BOOLEAN_TYPE;
-	}
-
-	@Override
-	public Type visitOr(GOParser.OrContext ctx) {
-		Type left = visit(ctx.expr(0));
-		Type right = visit(ctx.expr(1));
-
-		if (left != BOOLEAN_TYPE || right != BOOLEAN_TYPE)
-			mismatchedOperationError(ctx.start.getLine(), ctx.getText(), left, right);
+		if (left.type != BOOLEAN_TYPE || right.type != BOOLEAN_TYPE)
+			mismatchedOperationError(ctx.start.getLine(), ctx.getText(), left.type, right.type);
 		
-		return BOOLEAN_TYPE;
+		return AST.newSubtree(NodeKind.OR_NODE, BOOLEAN_TYPE, left, right);
 	}
 
 //#endregion

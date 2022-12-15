@@ -131,7 +131,7 @@ if_stmt:
 	block 
 	(
 		ELSE (if_stmt | block)
-	)?;
+	)?	;
 
 simple_stmt:
 	inc_dec_stmt
