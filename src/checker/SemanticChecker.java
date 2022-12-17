@@ -16,6 +16,8 @@ import parser.GOParser.ParameterDeclContext;
 import parser.GOParser.StatementContext;
 import parser.GOParser.TypeContext;
 import parser.GOParserBaseVisitor;
+import tables.FunctionEntry;
+import tables.FunctionTable;
 import tables.ScopeHandler;
 import tables.StrTable;
 import tables.VarEntry;
@@ -36,6 +38,7 @@ import ast.NodeKind;
 public class SemanticChecker extends GOParserBaseVisitor<AST> {
 
 	private StrTable st = new StrTable(); // Tabela de strings.
+	private FunctionTable ft = new FunctionTable();
 	private VarTable vt = new VarTable(); // Tabela de variáveis.
 	private ScopeHandler sh = new ScopeHandler();
 
@@ -65,49 +68,63 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 	private String text; // TODO: ma pq?
 
 	// Exibe a AST no formato DOT em stderr.
-    public void printAST() {
-    	AST.printDot(root, vt);
-    }
+	public void printAST() {
+		AST.printDot(root, vt);
+	}
+
+	// TODO: NAO TESTADO AINDA (pra deixar erros mais curtos)
+	private void PANIC(String format, Object ... args) {
+		System.err.printf(format, args);
+		System.exit(1);
+	}
 
 	// Testa se o dado token foi declarado antes.
 	private AST checkVar(Token token) {
 		String varName = token.getText();
 		int line = token.getLine();
+
+		if (isFunction) {
+			int idx = ft.lookupVar(varName);
+			if (idx == -1) {
+				System.err.printf("SEMANTIC ERROR (%d): function '%s' was not declared.\n", line, varName);
+				System.exit(1);
+				// PANIC("SEMANTIC ERROR (%d): function '%s' was not declared.\n", line, varName);
+			}
+			return new AST(NodeKind.FUNC_CALL_NODE, idx, ft.get(idx).returns.get(0)); // considerando atualmente um unico retorno
+		}
+
 		VarEntry entry = sh.lookupVar(varName);
 		if (entry == null) {
 			System.err.printf("SEMANTIC ERROR (%d): variable '%s' was not declared.\n", line, varName);
 			System.exit(1);
 		}
-		if (isArray && entry.special != SpecialType.ARRAY) {
+		if (isArray && !entry.isArray) {
 			System.err.printf("SEMANTIC ERROR (%d): variable '%s' is not an array.\n", line, varName);
 			System.exit(1);
 		}
-		if (isFunction) {
-			if (entry.special != SpecialType.FUNCTION) {
-				System.err.printf("SEMANTIC ERROR (%d): variable '%s' is not a function.\n", line, varName);
-				System.exit(1);
-			}
-			// return entry.funcReturn.size() > 0 ? entry.funcReturn.get(0): Type.NIL_TYPE;
+		if (!isArray && entry.isArray) {
+			System.err.printf("SEMANTIC ERROR (%d): variable '%s' is an array.\n", line, varName);
+			System.exit(1);
 		}
-		//TODO 
-		return new AST(NodeKind.VAR_USE_NODE,0 ,entry.type) ;
+		int idx = vt.lookupVar(entry.name, entry.scope);
+		return new AST(NodeKind.VAR_USE_NODE, idx, entry.type);
 	}
 
-	private void checkFuncArguments(VarEntry func, GOParser.ArgumentsContext ctx) {
+	private void checkFuncArguments(FunctionEntry func, GOParser.ArgumentsContext ctx) {
 		LinkedList<Type> argumentsTypes = getExprTypes(ctx.expr_list());
 
-		if(func.funcParams.size() != argumentsTypes.size()){
-			String expectedParams = Type.listToString(func.funcParams); 
+		if(func.params.size() != argumentsTypes.size()){
+			String expectedParams = Type.listToString(func.params); 
 			String givenParams = Type.listToString(argumentsTypes); 
-			String qtt = func.funcParams.size() > argumentsTypes.size() ? "not enough" : "too many";
+			String qtt = func.params.size() > argumentsTypes.size() ? "not enough" : "too many";
 				
 			System.err.printf("SEMANTIC ERROR (%d): %s arguments in call to %s\n \t have (%s)\n\t want (%s)\n",
 				ctx.start.getLine(),qtt,func.name,expectedParams,givenParams);
 			System.exit(1);
 		}
-		for (Type paramType : func.funcParams) {
+		for (Type paramType : func.params) {
 			Type atype = argumentsTypes.removeFirst();
-			if (paramType == atype || (paramType == FLOAT32_TYPE && atype == INT_TYPE))
+			if (paramType == atype || (paramType == FLOAT32_TYPE && atype == INT_TYPE)) // TODO: Tá rolando uma conversão aqui.. temos q ver como tornar explicito dps
 				continue;
 			diffTypeError(ctx.start.getLine(),"argument to function", ctx.getText(), atype, paramType);
 		}
@@ -133,24 +150,31 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 		}
 	}
 
-	private void newFunc(Token token, LinkedList<Type> argList, LinkedList<Type> returnList ) {
-		String varName = token.getText();
+	private void newFunc(Token token, List<Type> argList, List<Type> returnList ) {
+		String funcName = token.getText();
 		int line = token.getLine();
-		VarEntry entry = sh.lookupVar(varName);
+		VarEntry entry = sh.lookupVar(funcName);
 		if (entry != null) {
 			System.err.printf("SEMANTIC ERROR (%d): variable '%s' already declared at line %d.\n", 
-					line, varName, entry.line);
+					line, funcName, entry.line);
 			System.exit(1);
 		}
+
+		if (ft.lookupVar(funcName) != -1) {
+			System.err.printf("SEMANTIC ERROR (%d): function '%s' already declared at line %d.\n", 
+			line, funcName,ft.get(ft.lookupVar(funcName)).line);
+			System.exit(1);
+		}
+
+
 		
-		vt.addVar(varName, line, sh.scopeDepth, !returnList.isEmpty()? returnList.getFirst():Type.NIL_TYPE, SpecialType.FUNCTION);
-		sh.addVar(varName, line, SpecialType.FUNCTION,argList,returnList);
+		ft.addFunction(funcName, line, argList, returnList);
 		isFunction = false;
 	}
 
 	private void newArray(String text, int line, Type type) {
-		vt.addVar(text, line, sh.scopeDepth, type, SpecialType.ARRAY);
-		sh.addVar(text, line, type, SpecialType.ARRAY);
+		vt.addVar(text, line, sh.scopeDepth, type, true);
+		sh.addVar(text, line, type, true);
 		isArray = false;
 	}
 

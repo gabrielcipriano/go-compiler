@@ -2,19 +2,23 @@ package tables;
 
 import java.util.ArrayList;
 import java.util.Formatter;
-import java.util.LinkedList;
 import java.util.List;
 
 import typing.Type;
-import typing.SpecialType;
 
 public final class VarTable {
 
 	// No mundo real isto certamente deveria ser um hash...
 	// Implementação da classe não é exatamente Javanesca porque
 	// tentei deixar o mais parecido possível com a original em C.
-	private List<Entry> table = new ArrayList<Entry>();
+	private List<VarEntry> table = new ArrayList<VarEntry>();
 
+
+	/**
+	 * 
+	 * @deprecated Use lookupVar(String s, int scope) because we can have vars with same name
+	 */
+	@Deprecated
 	public int lookupVar(String s) {
 		for (int i = 0; i < table.size(); i++) {
 			if (table.get(i).name.equals(s)) {
@@ -24,45 +28,31 @@ public final class VarTable {
 		return -1;
 	}
 
+	public int lookupVar(String s, int scope) {
+		for (int i = 0; i < table.size(); i++) {
+			if (table.get(i).scope == scope && table.get(i).name.equals(s)) {
+				return i;
+			}
+		}
+		return -1;
+	}
+
 	public int addVar(String s, int line, int scope, Type type) {
-		Entry entry = new Entry(s, line, scope, type);
+		VarEntry entry = new VarEntry(s, line, scope, type);
 		int idxAdded = table.size();
 		table.add(entry);
 		return idxAdded;
 	}
 
-	public int addVar(String s, int line, int scope, Type type, SpecialType special) {
-		Entry entry = new Entry(s, line, scope, type, special);
+	public int addVar(String s, int line, int scope, Type type, boolean isArray) {
+		VarEntry entry = new VarEntry(s, line, scope, type, isArray);
 		int idxAdded = table.size();
 		table.add(entry);
 		return idxAdded;
 	}
 
-	public int addVar(String s, int line, int scope, Type type, SpecialType special,LinkedList<Type> funcArgs,LinkedList<Type> funcReturns) {
-		Entry entry = new Entry(s, line, scope, type, special);
-		int idxAdded = table.size();
-		table.add(entry);
-		return idxAdded;
-	}
-
-	public String getName(int i) {
-		return table.get(i).name;
-	}
-
-	public int getLine(int i) {
-		return table.get(i).line;
-	}
-
-	public Type getType(int i) {
-		return table.get(i).type;
-	}
-
-	public int getScope(int i) {
-		return table.get(i).scope;
-	}
-
-	public SpecialType getSpecialType(int i) {
-		return table.get(i).special;
+	public VarEntry get(int i) {
+		return table.get(i);
 	}
 
 	public String toString() {
@@ -70,38 +60,12 @@ public final class VarTable {
 		Formatter f = new Formatter(sb);
 		f.format("Variables table:\n");
 		for (int i = 0; i < table.size(); i++) {
-			String special = getSpecialType(i) != null 
-				? getSpecialType(i).toString() 
-				: "-";
-			f.format("Entry %d -- name: %s, line: %d, scope: %d, type: %s, special: %s\n", i,
-	                 getName(i), getLine(i), getScope(i), getType(i).toString(), special);
+			VarEntry v = get(i);
+			String isArray = v.isArray ? "[ARRAY]" : "";
+			f.format("Entry %d -- name: %s, line: %d, scope: %d, type: %s %s\n", i,
+	                 v.name, v.line, v.scope, v.type.toString(), isArray);
 		}
 		f.close();
 		return sb.toString();
-	}
-
-	private static final class Entry {
-		private final String name;
-		private final int line;
-		private final Type type;
-		private final SpecialType special;
-		private final int scope;
-
-
-		Entry(String name, int line, int scope, Type type, SpecialType special) {
-			this.name = name;
-			this.scope = scope;
-			this.line = line;
-			this.type = type;
-			this.special = special;
-		}
-
-		Entry(String name, int line, int scope, Type type) {
-			this.name = name;
-			this.line = line;
-			this.scope = scope;
-			this.type = type;
-			this.special = null;
-		}
 	}
 }
