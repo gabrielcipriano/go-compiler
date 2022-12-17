@@ -45,7 +45,7 @@ public enum Type {
 		}
 	}
 
-	private static boolean isNumber(Type type ) {
+	public static boolean isNumber(Type type ) {
 		return type == INT_TYPE || type == FLOAT32_TYPE;
 	}
 
@@ -66,5 +66,9 @@ public enum Type {
 			sb.append(", ");
 		}
 		return sb.toString();
+	}
+
+	public static boolean isBothNumbers(Type r_type, Type l_type) {
+		return isNumber(l_type) && isNumber(r_type);
 	}
 }

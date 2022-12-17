@@ -58,5 +58,6 @@ public class Main {
 		// Saída final. Se chegou até aqui é porque não houve erro.
 		System.out.println("PARSE SUCCESSFUL!");
 		checker.printTables();
+		checker.printAST();
 	}
 }

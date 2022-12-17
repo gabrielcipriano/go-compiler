@@ -11,6 +11,7 @@ public enum NodeKind {
     BOOL_LIT_NODE,
     INT_LIT_NODE,
     STR_LIT_NODE,
+    NIL_LIT_NODE,
     VAR_DECL_NODE,
     VAR_LIST_NODE,
     VAR_USE_NODE,
@@ -24,11 +25,14 @@ public enum NodeKind {
     PROGRAM_NODE,
     READ_NODE,
     FOR_NODE,
+    DIV_NODE,
     TIMES_NODE,
     WRITE_NODE,
     // Type conversion nodes
     I2F_NODE,
     
+    FOR_CLAUSE_NODE,
+    IF_CLAUSE_NODE,
     AND_NODE,
     OR_NODE,
     PRINT_NODE,
@@ -39,7 +43,9 @@ public enum NodeKind {
     GREATER_NODE,
     GREATER_EQ_NODE,
     NOT_NODE,
+    FUNC_CALL_NODE,
     INCREMENT;
+
 
 	public String toString() {
 		switch(this) {
@@ -59,6 +65,7 @@ public enum NodeKind {
             case FOR_NODE:          return "for";
             case STR_LIT_NODE:      return "";
             case TIMES_NODE:        return "*";
+            case DIV_NODE:          return "/";
             case VAR_DECL_NODE:     return "var_decl";
             case VAR_LIST_NODE:     return "var_list";
             case VAR_USE_NODE:      return "var_use";
@@ -73,6 +80,11 @@ public enum NodeKind {
             case GREATER_NODE:      return ">";
             case NOT_NODE:          return "!";
             case INCREMENT:         return "++";
+            case FOR_CLAUSE_NODE:   return "for_clause";
+            case IF_CLAUSE_NODE:    return "if_clause";
+            case ELSE_NODE:         return "else";
+            case NIL_LIT_NODE:      return "nil";
+            case FUNC_CALL_NODE:    return "function";
 			default:
 				System.err.println("ERROR: Fall through in NodeKind enumeration!");
 				System.exit(1);
@@ -88,6 +100,8 @@ public enum NodeKind {
 	        case STR_LIT_NODE:
 	        case VAR_DECL_NODE:
 	        case VAR_USE_NODE:
+            case NIL_LIT_NODE:
+            case FUNC_CALL_NODE://TODO function call tem data?
 	            return true;
 	        default:
 	            return false;
