@@ -140,6 +140,12 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 					line, varName, entry.line);
 			System.exit(1);
 		}
+		if (ft.lookupVar(varName) != -1) {
+			System.err.printf("SEMANTIC ERROR (%d): name '%s' already declared as function at line %d.\n", 
+				line, varName, entry.line);
+			System.exit(1);
+		}
+
 		if (isArray) {
 			newArray(varName, line, type);
 		} /*else if (isFunction) {
