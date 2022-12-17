@@ -44,6 +44,7 @@ public enum NodeKind {
     GREATER_EQ_NODE,
     NOT_NODE,
     FUNC_CALL_NODE,
+    FUNC_DECL_NODE,
     INCREMENT;
 
 

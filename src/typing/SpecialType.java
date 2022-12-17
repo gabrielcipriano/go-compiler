@@ -1,6 +1,7 @@
 package typing;
 
 // Enumeração dos tipos especiais
+@Deprecated // function ganhou a propria table, varTable agora utiliza isArray (boolean)
 public enum SpecialType {
 	ARRAY("array"),
 	FUNCTION("func");

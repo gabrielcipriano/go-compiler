@@ -5,16 +5,15 @@ import java.util.Formatter;
 
 @SuppressWarnings("serial")
 public final class StrTable extends ArrayList<String>{
-    // No mundo real isto certamente deveria ser um hash...
-
-    @Override
-    public boolean add(String s) {
+    // @Override
+    public int addString(String s) {
 		for (int i = 0; i < this.size(); i++) {
 			if (this.get(i).equals(s)) {
-				return false;
+				return i;
 			}
 		}
-		return super.add(s);
+		super.add(s);
+		return this.size() - 1; // index da ultima inserção
 	}
 
 	public String toString() {

@@ -5,6 +5,7 @@ import static typing.Type.NO_TYPE;
 import java.util.ArrayList;
 import java.util.List;
 
+import tables.FunctionTable;
 import tables.VarTable;
 import typing.Conv;
 import typing.Type;
@@ -84,6 +85,7 @@ public class AST {
 	// Estáticas porque só precisamos de uma instância.
 	private static int nr;
 	private static VarTable vt;
+	private static FunctionTable ft;
 
 	// Imprime recursivamente a codificação em DOT da subárvore começando no nó atual.
 	// Usa stderr como saída para facilitar o redirecionamento, mas isso é só um hack.
@@ -95,7 +97,9 @@ public class AST {
 	    	System.err.printf("(%s) ", this.type.toString());
 	    }
 	    if (this.kind == NodeKind.VAR_DECL_NODE || this.kind == NodeKind.VAR_USE_NODE) {
-	    	System.err.printf("%s@", vt.getName(this.intData));
+	    	System.err.printf("%s@", vt.get(this.intData).name);
+	    } else if (this.kind == NodeKind.FUNC_CALL_NODE || this.kind ==  NodeKind.FUNC_DECL_NODE) {
+	    	System.err.printf("%s@", ft.get(this.intData).name);
 	    } else {
 	    	System.err.printf("%s", this.kind.toString());
 	    }
@@ -118,9 +122,10 @@ public class AST {
 	}
 
 	// Imprime a árvore toda em stderr.
-	public static void printDot(AST tree, VarTable table) {
+	public static void printDot(AST tree, VarTable varTable, FunctionTable funcTable) {
 	    nr = 0;
-	    vt = table;
+	    vt = varTable;
+	    ft = funcTable;
 	    System.err.printf("digraph {\ngraph [ordering=\"out\"];\n");
 	    tree.printNodeDot();
 	    System.err.printf("}\n");

@@ -69,7 +69,7 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 
 	// Exibe a AST no formato DOT em stderr.
 	public void printAST() {
-		AST.printDot(root, vt);
+		AST.printDot(root, vt, ft);
 	}
 
 	// TODO: NAO TESTADO AINDA (pra deixar erros mais curtos)
@@ -517,11 +517,11 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 	
 	@Override
 	public AST visitNilVal(GOParser.NilValContext ctx) {
-		return new AST(NodeKind.NIL_LIT_NODE, 0, NO_TYPE);
+		return new AST(NodeKind.NIL_LIT_NODE, 0, NIL_TYPE);
 	}
 
 	public AST visitStrVal(GOParser.StrValContext ctx) {
-		int idx = 1; // TODO get index of string in symbol table
+		int idx = st.addString(ctx.getText());
 		
 		return new AST(NodeKind.STR_LIT_NODE, idx, STRING_TYPE);
 	}
