@@ -1,6 +1,9 @@
 package typing;
 
+import java.util.ArrayList;
 import java.util.List;
+
+import ast.AST;
 
 // Enumeração dos tipos primitivos
 public enum Type {
@@ -60,11 +63,22 @@ public enum Type {
 	}
 
 	public static String listToString(List<Type> types) {
+		
 		StringBuilder sb = new StringBuilder();
 		for (Type t : types) {
 			sb.append(t.toString());
 			sb.append(", ");
 		}
+		return sb.toString();
+	}
+
+	public static String astToString(List<AST> types) {
+		StringBuilder sb = new StringBuilder();
+		for (AST t : types) {
+			sb.append(t.toString());
+			sb.append(", ");
+		}
+	
 		return sb.toString();
 	}
 
