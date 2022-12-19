@@ -620,34 +620,34 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 
 	@Override
 	public AST visitUnary(GOParser.UnaryContext ctx) {
-		AST expr = visitChildren(ctx);
-		boolean wasExpectingBoolType = ctx.NOT() != null && expr.type != BOOLEAN_TYPE; // ex: !5
-		boolean wasExpectingNumType = (ctx.MINUS() != null || ctx.PLUS() != null) && !Type.isNumber(expr.type); // ex: -5 
+		AST node = visitChildren(ctx);
+	
+		if(ctx.NOT() != null) {
+			if(node.type != BOOLEAN_TYPE)
+				operatorNotDefinedError(ctx.start.getLine(), ctx.getText(), ctx.unary_op.getText(), node.type);
+			return AST.newSubtree(NodeKind.NOT_NODE, BOOLEAN_TYPE, node);
+		}
+		// operacoes unarias de + e - são somente para numeros
+		if (!Type.isNumber(node.type))
+			operatorNotDefinedError(ctx.start.getLine(), ctx.getText(), ctx.unary_op.getText(), node.type);
 
-		if ( wasExpectingBoolType || wasExpectingNumType )
-			operatorNotDefinedError(ctx.start.getLine(), ctx.getText(), ctx.unary_op.getText(), expr.type);
-
-		return expr;
+		var kind = ctx.PLUS() != null ? NodeKind.PLUS_NODE : NodeKind.MINUS_NODE;
+		return AST.newSubtree(kind, node.type, node);
 	}
 
 	@Override
 	public AST visitMultDiv(GOParser.MultDivContext ctx) {
 		AST left = visit(ctx.expr(0));
 		AST right = visit(ctx.expr(1));
-		Type type = Type.numberTypeWidening(left.type, right.type);
 
-		NodeKind node = null;
+		NodeKind node = ctx.DIV() != null ? NodeKind.DIV_NODE : NodeKind.TIMES_NODE;
 
-		if (ctx.DIV() != null) {
-			node = NodeKind.DIV_NODE;
-		} else if (ctx.STAR() != null) {
-			node = NodeKind.TIMES_NODE;
-		}
-
-		if (type == null)
+		if (!Type.isBothNumbers(left.type, right.type))
 			mismatchedOperationError(ctx.start.getLine(), ctx.getText(), left.type, right.type);
 
-		return AST.newSubtree(node, type, left, right);
+		var children = AST.numberWidening(left, right);
+
+		return AST.newSubtree(node, children[0].type, left, right);
 	}
 
 	@Override
@@ -655,14 +655,7 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 		AST l = visit(ctx.expr(0));
 		AST r = visit(ctx.expr(1));
 
-		NodeKind node = null;
-
-		if (ctx.PLUS() != null) {
-			node = NodeKind.PLUS_NODE;
-		} else if ( ctx.MINUS() != null ) {
-			node = NodeKind.MINUS_NODE;
-		}
-
+		NodeKind node = ctx.PLUS() != null ? NodeKind.PLUS_NODE : NodeKind.MINUS_NODE;
 		
 		if (l.type == STRING_TYPE && r.type == STRING_TYPE && node == NodeKind.PLUS_NODE)
 			return AST.newSubtree(node, STRING_TYPE, l, r);
@@ -670,17 +663,8 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 		if (!Type.isBothNumbers(l.type, r.type))
 			mismatchedOperationError(ctx.start.getLine(), ctx.getText(), l.type, r.type);
 
-		// Verifica se é necessário o widening
-		if (Type.isI2FWideningNeeded(l.type, r.type)){
-			// Verifica quem precisa de conversão e cria o nó
-			if (Type.isI2FTarget(l.type) ){
-				r = AST.newSubtree(NodeKind.I2F_NODE, Type.FLOAT32_TYPE, r);
-			} else {
-				l = AST.newSubtree(NodeKind.I2F_NODE, Type.FLOAT32_TYPE, l);
-			}
-		}
-				
-		return AST.newSubtree(node, NO_TYPE, l, r);
+		var children = AST.numberWidening(l, r);
+		return AST.newSubtree(node, children[0].type, children);
 	}
 
 	@Override
@@ -707,13 +691,14 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 		}
 
 		if (left.type == STRING_TYPE && right.type == STRING_TYPE)
-			return AST.newSubtree(node, STRING_TYPE, left, right);
+			return AST.newSubtree(node, BOOLEAN_TYPE, left, right);
 
-		Type type = Type.numberTypeWidening(left.type, right.type);
-		if (type == null)
+		if (!Type.isBothNumbers(left.type, right.type))
 			mismatchedOperationError(ctx.start.getLine(), ctx.getText(), left.type, right.type);
 
-		return AST.newSubtree(node, BOOLEAN_TYPE, left, right);
+		var children = AST.numberWidening(left, right);
+
+		return AST.newSubtree(node, BOOLEAN_TYPE, children);
 	}
 
 	@Override
@@ -737,7 +722,4 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 		
 		return AST.newSubtree(NodeKind.OR_NODE, BOOLEAN_TYPE, left, right);
 	}
-
-//#endregion
-
 }

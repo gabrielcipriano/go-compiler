@@ -73,14 +73,30 @@ public class AST {
 	    return node;
 	}
 
-		// Cria um nó e pendura todos os filhos passados como argumento.
-		public static AST newSubtree(NodeKind kind, Type type, int intData, AST... children) {
-			AST node = new AST(kind, intData, type);
-				for (AST child: children) {
-					node.addChild(child);
-				}
-				return node;
+	// Cria um nó e pendura todos os filhos passados como argumento.
+	public static AST newSubtree(NodeKind kind, Type type, int intData, AST... children) {
+		AST node = new AST(kind, intData, type);
+			for (AST child: children) {
+				node.addChild(child);
+			}
+			return node;
+	}
+
+	// Cria um nó e pendura todos os filhos passados como argumento.
+	public static AST[] numberWidening(AST left, AST right) {
+		// Verifica se é necessário o widening
+		if (Type.isI2FWideningNeeded(left.type, right.type)){
+			// Verifica quem precisa de conversão e cria o nó
+			if (Type.isI2FTarget(left.type) ){
+				var l = AST.createConvNode(Conv.I2F, left);
+				return new AST[]{ l, right };
+			} else {
+				var r = AST.createConvNode(Conv.I2F, right);
+				return new AST[]{ left, r };
+			}
 		}
+		return new AST[]{ left, right };
+	}
 
 	// Cria e retorna um novo nó de conversão da AST segundo o parâmetro 'conv' passado.
 	// O parâmetro 'n' é o nó que será pendurado como filho do nó de conversão.
