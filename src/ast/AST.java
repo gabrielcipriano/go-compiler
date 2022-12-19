@@ -57,6 +57,13 @@ public class AST {
 	    return this.children.get(idx);
 	}
 
+	public List<Type> getChildrenTypes() {
+		List<Type> types = new ArrayList<Type>();
+		for (AST child : children)
+			types.add(child.type);
+		return types;
+	}
+
 	// Cria um nó e pendura todos os filhos passados como argumento.
 	public static AST newSubtree(NodeKind kind, Type type, AST... children) {
 		AST node = new AST(kind, 0, type);
@@ -65,6 +72,15 @@ public class AST {
 	    }
 	    return node;
 	}
+
+		// Cria um nó e pendura todos os filhos passados como argumento.
+		public static AST newSubtree(NodeKind kind, Type type, int intData, AST... children) {
+			AST node = new AST(kind, intData, type);
+				for (AST child: children) {
+					node.addChild(child);
+				}
+				return node;
+		}
 
 	// Cria e retorna um novo nó de conversão da AST segundo o parâmetro 'conv' passado.
 	// O parâmetro 'n' é o nó que será pendurado como filho do nó de conversão.
@@ -79,7 +95,17 @@ public class AST {
 					System.exit(1);
 					return null; // Never reached...
 		}
-}
+	}
+
+	public static String typesToString(List<AST> asts) {
+		StringBuilder sb = new StringBuilder();
+		for (AST ast : asts) {
+			sb.append(ast.type.toString());
+			sb.append(", ");
+		}
+	
+		return sb.toString();
+	}
 
 	// Variáveis internas usadas para geração da saída em DOT.
 	// Estáticas porque só precisamos de uma instância.

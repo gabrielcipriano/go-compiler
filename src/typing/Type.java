@@ -1,9 +1,7 @@
 package typing;
 
-import java.util.ArrayList;
 import java.util.List;
 
-import ast.AST;
 
 // Enumeração dos tipos primitivos
 public enum Type {
@@ -72,17 +70,15 @@ public enum Type {
 		return sb.toString();
 	}
 
-	public static String astToString(List<AST> types) {
-		StringBuilder sb = new StringBuilder();
-		for (AST t : types) {
-			sb.append(t.toString());
-			sb.append(", ");
-		}
-	
-		return sb.toString();
-	}
-
 	public static boolean isBothNumbers(Type r_type, Type l_type) {
 		return isNumber(l_type) && isNumber(r_type);
 	}
+
+  public static boolean isI2FWideningNeeded(Type r, Type l) {
+    return (r == INT_TYPE && l == FLOAT32_TYPE) || (r == FLOAT32_TYPE && l == INT_TYPE);
+  }
+
+  public static boolean isI2FTarget(Type type) {
+    return type == INT_TYPE;
+  }
 }

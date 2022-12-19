@@ -92,7 +92,7 @@ function_call:
 print:
 	PRINT L_PR expr_list R_PR;
 
-function_decl: FUNC ID parameters result? block?;
+function_decl: FUNC ID parameters result? block; // block obrigatorio na nossa implementacao
 
 parameters:
 	L_PR (parameterDecl (COMMA parameterDecl)*)? R_PR;
