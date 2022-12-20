@@ -33,6 +33,10 @@ public final class FunctionTable {
 		return table.get(i);
 	}
 
+	public FunctionEntry getLast() {
+		return table.get(table.size() -1);
+	}
+
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		Formatter f = new Formatter(sb);

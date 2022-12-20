@@ -17,8 +17,6 @@ public enum NodeKind {
     ASSIGN_LIST_NODE,
     VAR_DECL_LIST_NODE,
     VAR_USE_NODE,
-    ARRAY_ACCESS_NODE,
-    ARRAY_TYPE_NODE,
     ASSIGN_NODE,
     BLOCK_NODE,
     IF_NODE,
@@ -54,7 +52,8 @@ public enum NodeKind {
     EQ_TIMES_NODE,
     EQ_DIV_NODE,
     INCREMENT,
-    DECREMENT;
+    DECREMENT,
+    RETURN_NODE;
 
 
 	public String toString() {
@@ -81,8 +80,6 @@ public enum NodeKind {
             case ASSIGN_LIST_NODE:  return "assign_list";
             case VAR_DECL_LIST_NODE:return "decl_list";
             case VAR_USE_NODE:      return "var_use";
-            case ARRAY_ACCESS_NODE: return "[]";
-            case ARRAY_TYPE_NODE:   return "[]";
             case WRITE_NODE:        return "write";
             case I2F_NODE:          return "I2F";
             case AND_NODE:          return "&&";
@@ -105,6 +102,7 @@ public enum NodeKind {
             case EQ_TIMES_NODE:     return "*=";
             case EQ_DIV_NODE:       return "/=";
             case FUNC_DECL_NODE:    return "func_decl";
+            case RETURN_NODE:       return "return";
 			default:
 				System.err.println("ERROR: Fall through in NodeKind enumeration!");
 				System.exit(1);
@@ -122,8 +120,6 @@ public enum NodeKind {
 	        case VAR_USE_NODE:
             case NIL_LIT_NODE:
             case FUNC_CALL_NODE:
-            case ARRAY_ACCESS_NODE:
-            case ARRAY_TYPE_NODE:
 	            return true;
 	        default:
 	            return false;

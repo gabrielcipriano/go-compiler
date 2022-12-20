@@ -144,9 +144,9 @@ public class AST {
 	    	System.err.printf("(%s) ", this.type.toString());
 	    }
 	    if (this.kind == NodeKind.VAR_DECL_NODE || this.kind == NodeKind.VAR_USE_NODE) {
-	    	System.err.printf("%s@", vt.get(this.intData).name);
-	    } else if (this.kind == NodeKind.ARRAY_ACCESS_NODE) {
-	    	System.err.printf("%s@[]", vt.get(this.intData).name);
+				if(vt.get(this.intData).isArray()) 
+					System.err.printf("%s[%d]@", vt.get(this.intData).name, vt.get(this.intData).arraySz);
+	    	else System.err.printf("%s@", vt.get(this.intData).name);
 	    } else if (this.kind == NodeKind.FUNC_CALL_NODE || this.kind ==  NodeKind.FUNC_DECL_NODE) {
 	    	System.err.printf("%s@", ft.get(this.intData).name);
 	    } else {

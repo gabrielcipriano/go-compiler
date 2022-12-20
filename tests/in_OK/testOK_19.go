@@ -3,8 +3,8 @@ package main
 import "fmt"
 
 func main() {
-	var arr [10]int
-	arr[1] = 5
-	fmt.Println(arr[1])
-	arr[0] = arr[1]
+	var minhaArray [10]int
+	minhaArray[1] = 5
+	fmt.Println(minhaArray[1])
+	minhaArray[0] = minhaArray[1]
 }

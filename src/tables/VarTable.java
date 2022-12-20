@@ -44,8 +44,8 @@ public final class VarTable {
 		return idxAdded;
 	}
 
-	public int addVar(String s, int line, int scope, Type type, boolean isArray) {
-		VarEntry entry = new VarEntry(s, line, scope, type, isArray);
+	public int addVar(String s, int line, int scope, Type type, int arraySz) {
+		VarEntry entry = new VarEntry(s, line, scope, type, arraySz);
 		int idxAdded = table.size();
 		table.add(entry);
 		return idxAdded;
@@ -61,9 +61,9 @@ public final class VarTable {
 		f.format("Variables table:\n");
 		for (int i = 0; i < table.size(); i++) {
 			VarEntry v = get(i);
-			String isArray = v.isArray ? "[ARRAY]" : "";
-			f.format("Entry %d -- name: %s, line: %d, scope: %d, type: %s %s\n", i,
-	                 v.name, v.line, v.scope, v.type.toString(), isArray);
+			String isArray = v.isArray() ? "[" + v.arraySz + "]" : "";
+			f.format("Entry %d -- name: %s, line: %d, scope: %d, type: %s%s\n", i,
+	                 v.name, v.line, v.scope, isArray, v.type.toString());
 		}
 		f.close();
 		return sb.toString();

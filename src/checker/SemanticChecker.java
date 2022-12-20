@@ -46,6 +46,7 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 	private AST root;
 
 	private boolean isArray = false;
+	private int arraySz = -1;
 	private boolean isFunction = false;
 
 	// Exibe a AST no formato DOT em stderr.
@@ -82,12 +83,12 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 		VarEntry entry = sh.lookupVar(varName);
 		if (entry == null)
 			PANIC("SEMANTIC ERROR (%d): variable '%s' was not declared.\n", line, varName);
-		if (isArray && !entry.isArray)
+		if (isArray && !entry.isArray())
 			PANIC("SEMANTIC ERROR (%d): variable '%s' is not an array.\n", line, varName);
-		if (!isArray && entry.isArray)
+		if (!isArray && entry.isArray())
 			PANIC("SEMANTIC ERROR (%d): variable '%s' is an array.\n", line, varName);
 		int idx = vt.lookupVar(entry.name, entry.scope);
-		return new AST(isArray? NodeKind.ARRAY_ACCESS_NODE : NodeKind.VAR_USE_NODE , idx, entry.type);
+		return new AST(NodeKind.VAR_USE_NODE , idx, entry.type);
 	}
 
 	private List<AST> checkFuncArguments(FunctionEntry func, GOParser.ArgumentsContext ctx) {
@@ -153,8 +154,8 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 	}
 
 	private int newArray(String text, int line, Type type) {
-		int idx = vt.addVar(text, line, sh.scopeDepth, type, true);
-		sh.addVar(text, line, type, true);
+		int idx = vt.addVar(text, line, sh.scopeDepth, type, arraySz);
+		sh.addVar(text, line, type, arraySz);
 		isArray = false;
 		return idx;
 	}
@@ -314,6 +315,23 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 	}
 
 	@Override
+	public AST visitReturn_stmt(GOParser.Return_stmtContext ctx) {
+		var currFunc = ft.getLast();
+		var exprList = getExprNodes(ctx.expr_list());
+		if (currFunc.returns.size() != exprList.size())
+			PANIC("SEMANTIC ERROR (%d):  cannot use %s as %s value in return statement.\n",
+				ctx.start.getLine(), AST.typesToString(exprList), Type.listToString(currFunc.returns));
+		
+		for (int i = 0; i < exprList.size(); i++)
+			if (exprList.get(i).type != currFunc.returns.get(i))
+				PANIC("SEMANTIC ERROR (%d):  cannot use %s as %s value in return statement.\n",
+					ctx.start.getLine(), AST.typesToString(exprList), Type.listToString(currFunc.returns));
+		var returnNode = new AST(NodeKind.RETURN_NODE, 0, NO_TYPE);
+		returnNode.addChildren(exprList);
+		return returnNode;
+	}
+
+	@Override
 	public AST visitVar_spec(GOParser.Var_specContext ctx) { // var a, b int = 1, 2 || var c, d string
 		AST typeNode = visit(ctx.type());
 		AST varListNode = AST.newSubtree(NodeKind.VAR_DECL_LIST_NODE, NO_TYPE);
@@ -441,9 +459,8 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 	@Override
 	public AST visitArrayType(GOParser.ArrayTypeContext ctx) {
 		isArray = true;
-		var typeNode = visit(ctx.array_type().type());
-		int arraySize = Integer.parseInt(ctx.array_type().INT_LIT().getText());
-		return new AST(NodeKind.ARRAY_TYPE_NODE, arraySize, typeNode.type);
+		arraySz = Integer.parseInt(ctx.array_type().INT_LIT().getText());
+		return visit(ctx.array_type().type());
 	}
 //endregion
 
@@ -507,7 +524,7 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 			}
 			AST exprNode = visit(ctx.for_clause().expr());
 			if(exprNode.type != BOOLEAN_TYPE)
-				PANIC("SEMANTIC ERROR [Invalid expr] (%d): cannot convert '%s' (%s) to %s",
+				PANIC("SEMANTIC ERROR [Invalid expr] (%d): cannot convert '%s' (%s) to %s\n",
 					ctx.start.getLine(), ctx.for_clause().expr().getText(), exprNode.type.toString(), BOOLEAN_TYPE.toString());
 			clauseNode.addChild(exprNode);
 			if(ctx.for_clause().post_stmt !=null){
@@ -537,7 +554,7 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 		AST exprNode = visit(ctx.expr());
 		clauseNode.addChild(exprNode);
 		if(exprNode.type != BOOLEAN_TYPE)
-			PANIC("SEMANTIC ERROR [Invalid expr] (%d): cannot convert '%s' (%s) to %s",
+			PANIC("SEMANTIC ERROR [Invalid expr] (%d): cannot convert '%s' (%s) to %s\n",
 				ctx.start.getLine(), ctx.expr().getText(), exprNode.type.toString(), BOOLEAN_TYPE.toString());
 
 		sh.push();
@@ -611,7 +628,7 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 			isArray = false;
 			AST indexNode = visit(ctx.index().expr());
 			if(indexNode.type != Type.INT_TYPE)
-				PANIC("SEMANTIC ERROR [Invalid index] (%d): cannot convert '%s' (%s) to %s",
+				PANIC("SEMANTIC ERROR [Invalid index] (%d): cannot convert '%s' (%s) to %s\n",
 					ctx.start.getLine(), ctx.index().getText(), indexNode.type.toString(), Type.INT_TYPE.toString());
 			arrAccessNode.addChild(indexNode);
 			return arrAccessNode;
@@ -625,7 +642,7 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 	
 			// função em uma expressão deve ter um unico valor de retorno
 			if (func.returns.size() == 0)
-				PANIC("SEMANTIC ERROR (%d): %s (no value) used as value", nameFunc.getLine(),ctx.getText());
+				PANIC("SEMANTIC ERROR (%d): %s (no value) used as value\n", nameFunc.getLine(),ctx.getText());
 			else if (func.returns.size() > 1)
 				PANIC("SEMANTIC ERROR (%d):  multiple-value %s (value of type (%s)) in single-value context\n",
 					nameFunc.getLine(), ctx.getText(), Type.listToString(func.returns));

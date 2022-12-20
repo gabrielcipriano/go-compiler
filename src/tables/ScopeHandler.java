@@ -3,7 +3,6 @@ package tables;
 import java.util.LinkedList;
 
 import typing.Type;
-import typing.SpecialType;
 
 public final class ScopeHandler {
   LinkedList<LinkedList<VarEntry>> scopes = new LinkedList<LinkedList<VarEntry>>();
@@ -25,8 +24,8 @@ public final class ScopeHandler {
     return null;
   }
 
-  public Void addVar(String name, int line, Type type, boolean isArray) {
-    this.scopes.getLast().add(new VarEntry(name, line, this.scopeDepth, type, isArray));
+  public Void addVar(String name, int line, Type type, int arraySz) {
+    this.scopes.getLast().add(new VarEntry(name, line, this.scopeDepth, type, arraySz));
     return null;
   }
 

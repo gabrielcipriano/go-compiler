@@ -7,21 +7,25 @@ public final class VarEntry {
   public final int line;
   public final int scope;
   public final Type type;
-  public final boolean isArray;
+  public final int arraySz;
 
   VarEntry(String name, int line, int scope, Type type) {
     this.name = name;
     this.line = line;
     this.scope = scope;
     this.type = type;
-    this.isArray = false;
+    this.arraySz = -1;
   }
 
-  VarEntry(String name, int line, int scope, Type type, boolean isArray) {
+  VarEntry(String name, int line, int scope, Type type, int arraySz) {
     this.name = name;
     this.line = line;
     this.scope = scope;
     this.type = type;
-    this.isArray = isArray;
+    this.arraySz = arraySz;
+  }
+
+  public boolean isArray(){
+    return this.arraySz > 0;
   }
 }
