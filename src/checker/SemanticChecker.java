@@ -319,12 +319,12 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 		var currFunc = ft.getLast();
 		var exprList = getExprNodes(ctx.expr_list());
 		if (currFunc.returns.size() != exprList.size())
-			PANIC("SEMANTIC ERROR (%d):  cannot use %s as %s value in return statement.\n",
+			PANIC("SEMANTIC ERROR (%d):  cannot use (%s) as (%s) value in return statement.\n",
 				ctx.start.getLine(), AST.typesToString(exprList), Type.listToString(currFunc.returns));
 		
 		for (int i = 0; i < exprList.size(); i++)
 			if (exprList.get(i).type != currFunc.returns.get(i))
-				PANIC("SEMANTIC ERROR (%d):  cannot use %s as %s value in return statement.\n",
+				PANIC("SEMANTIC ERROR (%d):  cannot use (%s) as (%s) value in return statement.\n",
 					ctx.start.getLine(), AST.typesToString(exprList), Type.listToString(currFunc.returns));
 		var returnNode = new AST(NodeKind.RETURN_NODE, 0, NO_TYPE);
 		returnNode.addChildren(exprList);
