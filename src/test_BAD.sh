@@ -7,7 +7,7 @@ GEN_PATH=$ROOT/src
 GEN_PACKAGE=parser
 DATA=$ROOT/tests
 IN=$DATA/in_BAD
-OUT=$DATA/out
+OUT=$DATA/in_BAD/out
 cd $GEN_PATH
 for infile in `ls $IN/*.go`; do
   base=$(basename $infile)
