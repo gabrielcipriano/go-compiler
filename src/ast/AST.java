@@ -49,6 +49,11 @@ public class AST {
 		this.children.add(child);
 	}
 
+	public void addChildren(List<AST> children) {
+		for (AST child: children)
+			this.children.add(child);
+	}
+
 	// Retorna o filho no índice passado.
 	// Não há nenhuma verificação de erros!
 	public AST getChild(int idx) {
@@ -140,6 +145,8 @@ public class AST {
 	    }
 	    if (this.kind == NodeKind.VAR_DECL_NODE || this.kind == NodeKind.VAR_USE_NODE) {
 	    	System.err.printf("%s@", vt.get(this.intData).name);
+	    } else if (this.kind == NodeKind.ARRAY_ACCESS_NODE) {
+	    	System.err.printf("%s@[]", vt.get(this.intData).name);
 	    } else if (this.kind == NodeKind.FUNC_CALL_NODE || this.kind ==  NodeKind.FUNC_DECL_NODE) {
 	    	System.err.printf("%s@", ft.get(this.intData).name);
 	    } else {

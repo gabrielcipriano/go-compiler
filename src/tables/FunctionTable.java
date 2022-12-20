@@ -39,8 +39,8 @@ public final class FunctionTable {
 		f.format("Functions table:\n");
 		for (int i = 0; i < table.size(); i++) {
 			FunctionEntry func = get(i);
-			f.format("Entry %d -- name: %s, line: %d, params types: %d, returns types: %s\n", i,
-	                 func.name, func.line, Type.listToString(func.params), Type.listToString(func.returns));
+			f.format("Entry %d -- name: %s, line: %d, params types: %s, returns types: %s\n", 
+					i, func.name, func.line, Type.listToString(func.params), Type.listToString(func.returns));
 		}
 		f.close();
 		return sb.toString();

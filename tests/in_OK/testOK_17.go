@@ -1,7 +1,7 @@
 package main
 
 func soma(a int, b float32) float32 {
-	c := a + 3
+	c := a + 3.5
 	return c
 }
 

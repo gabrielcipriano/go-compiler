@@ -17,10 +17,10 @@ program_sect: (function_decl | const_decl | var_decl) eos;
 package_clause: PACKAGE packageName = ID;
 
 assignment:
-  assignee_list assign_op expr_list;
+	assignee_list assign_op expr_list;
 
 assignee_list:
-	 assignee (COMMA assignee)*;
+	assignee (COMMA assignee)*;
 
 assignee:
 	ID index?;
@@ -38,7 +38,7 @@ identifier_list :
 ;
 
 expr_list:
-  expr (COMMA expr)*;
+	expr (COMMA expr)*;
 
 expr: 
   operand (index	| arguments)?			# operandExpr
@@ -125,9 +125,9 @@ for_clause:
 
 if_stmt:
 	IF 
-		( expr
-				| eos expr
-				| simple_stmt eos expr
+		( expr // if a := 1 { ... }
+				| eos expr // if ; a == 1 { ... }
+				| simple_stmt eos expr // if a := 1; a == 1 { ... }
 		) 
 	block 
 	(
@@ -200,7 +200,6 @@ type:
   | STRING 					# stringType
   | BOOLEAN 				# boolType
   | array_type 			# arrayType
-  | L_PR type R_PR	# brackets
   ;
 
 eos:

@@ -13,9 +13,12 @@ public enum NodeKind {
     STR_LIT_NODE,
     NIL_LIT_NODE,
     VAR_DECL_NODE,
+    SHORT_VAR_DECL_NODE,
     ASSIGN_LIST_NODE,
     VAR_DECL_LIST_NODE,
     VAR_USE_NODE,
+    ARRAY_ACCESS_NODE,
+    ARRAY_TYPE_NODE,
     ASSIGN_NODE,
     BLOCK_NODE,
     IF_NODE,
@@ -57,6 +60,7 @@ public enum NodeKind {
 	public String toString() {
 		switch(this) {
             case ASSIGN_NODE:       return "=";
+            case SHORT_VAR_DECL_NODE:return ":=";
             case EQ_NODE:           return "==";
             case BLOCK_NODE:        return "block";
             case BOOL_LIT_NODE:     return "";
@@ -77,6 +81,8 @@ public enum NodeKind {
             case ASSIGN_LIST_NODE:  return "assign_list";
             case VAR_DECL_LIST_NODE:return "decl_list";
             case VAR_USE_NODE:      return "var_use";
+            case ARRAY_ACCESS_NODE: return "[]";
+            case ARRAY_TYPE_NODE:   return "[]";
             case WRITE_NODE:        return "write";
             case I2F_NODE:          return "I2F";
             case AND_NODE:          return "&&";
@@ -98,6 +104,7 @@ public enum NodeKind {
             case EQ_MINUS_NODE:     return "-=";
             case EQ_TIMES_NODE:     return "*=";
             case EQ_DIV_NODE:       return "/=";
+            case FUNC_DECL_NODE:    return "func_decl";
 			default:
 				System.err.println("ERROR: Fall through in NodeKind enumeration!");
 				System.exit(1);
@@ -114,7 +121,9 @@ public enum NodeKind {
 	        case VAR_DECL_NODE:
 	        case VAR_USE_NODE:
             case NIL_LIT_NODE:
-            case FUNC_CALL_NODE://TODO function call tem data?
+            case FUNC_CALL_NODE:
+            case ARRAY_ACCESS_NODE:
+            case ARRAY_TYPE_NODE:
 	            return true;
 	        default:
 	            return false;
