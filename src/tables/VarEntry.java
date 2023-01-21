@@ -26,6 +26,22 @@ public final class VarEntry {
   }
 
   public boolean isArray(){
-    return this.arraySz > 0;
+    return arraySz > 0;
+  }
+
+  public boolean isInt() {
+		return type == Type.INT_TYPE;
+	}
+
+	public boolean isFloat() {
+		return type == Type.FLOAT32_TYPE;
+	}
+
+	public boolean isBool() {
+		return type == Type.BOOLEAN_TYPE;
+	}
+
+  public boolean isString() {
+    return type == Type.STRING_TYPE;
   }
 }

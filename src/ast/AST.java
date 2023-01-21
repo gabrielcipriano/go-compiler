@@ -3,6 +3,7 @@ package ast;
 import static typing.Type.NO_TYPE;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import tables.FunctionTable;
@@ -54,12 +55,16 @@ public class AST {
 			this.children.add(child);
 	}
 
-	// Retorna o filho no índice passado.
-	// Não há nenhuma verificação de erros!
 	public AST getChild(int idx) {
-		// Claro que um código em produção precisa testar o índice antes para
-		// evitar uma exceção.
-	    return this.children.get(idx);
+		if (idx >= this.children.size()) {
+			System.err.printf("zé vc tá tentando acessar um index que n possui valor");
+			System.exit(1);
+		}
+		return this.children.get(idx);
+	}
+
+	public Iterator<AST> iterateChildren() {
+		return this.children.iterator();
 	}
 
 	public List<Type> getChildrenTypes() {
@@ -67,6 +72,26 @@ public class AST {
 		for (AST child : children)
 			types.add(child.type);
 		return types;
+	}
+
+	public boolean getBoolData() {
+		return intData != 0;
+	}
+
+	public boolean isInt() {
+		return type == Type.INT_TYPE;
+	}
+
+	public boolean isFloat() {
+		return type == Type.FLOAT32_TYPE;
+	}
+
+	public boolean isBool() {
+		return type == Type.BOOLEAN_TYPE;
+	}
+
+	public boolean isString() {
+		return type == Type.STRING_TYPE;
 	}
 
 	// Cria um nó e pendura todos os filhos passados como argumento.
@@ -109,12 +134,12 @@ public class AST {
 	// nó passado como argumento.
 	public static AST createConvNode(Conv conv, AST n) {
 		switch(conv) {
-				case I2F:  return AST.newSubtree(NodeKind.I2F_NODE, Type.FLOAT32_TYPE, n);
-				case NONE: return n;
-				default:
-					System.err.printf("INTERNAL ERROR: invalid conversion of types!\n");
-					System.exit(1);
-					return null; // Never reached...
+			case I2F:  return AST.newSubtree(NodeKind.I2F_NODE, Type.FLOAT32_TYPE, n);
+			case NONE: return n;
+			default:
+				System.err.printf("INTERNAL ERROR: invalid conversion of types!\n");
+				System.exit(1);
+				return null; // Never reached...
 		}
 	}
 

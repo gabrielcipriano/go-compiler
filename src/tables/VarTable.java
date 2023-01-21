@@ -68,4 +68,8 @@ public final class VarTable {
 		f.close();
 		return sb.toString();
 	}
+
+	public int size() {
+		return table.size();
+	}
 }
