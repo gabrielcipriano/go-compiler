@@ -219,7 +219,7 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 	// *** OPERATIONS ***
 	@Override
 	protected Void visitMinus(AST node) {
-		// remember, remember, the polish reverse notation 
+		// remember, remember, the reverse polish notation
 		visit(node.getChild(0));
 		visit(node.getChild(1));
 
@@ -233,7 +233,7 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 
 	@Override
 	protected Void visitPlus(AST node) {
-		// remember, remember, the polish reverse notation 
+		// remember, remember, the reverse polish notation
 		visit(node.getChild(0));
 		visit(node.getChild(1));
 
@@ -249,7 +249,7 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 
 	@Override
 	protected Void visitDiv(AST node) {
-		// remember, remember, the polish reverse notation 
+		// remember, remember, the reverse polish notation
 		visit(node.getChild(0));
 		visit(node.getChild(1));
 	
@@ -263,7 +263,7 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 
 	@Override
 	protected Void visitTimes(AST node) {
-		// remember, remember, the polish reverse notation 
+		// remember, remember, the reverse polish notation
 		visit(node.getChild(0));
 		visit(node.getChild(1));
 

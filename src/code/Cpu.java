@@ -21,42 +21,42 @@ public class Cpu {
 	}
 
   void doIntOperation(BinaryOperator<Integer> operation) {
-		// remember, remember, the polish reverse notation 
+		// remember, remember, the reverse polish notation
 		int b = stack.popi();
 		int a = stack.popi();
 		stack.pushi(operation.apply(a,b));
 	}
 
 	void doIntPredicate(BiPredicate<Integer, Integer> predicate) {
-		// remember, remember, the polish reverse notation 
+		// remember, remember, the reverse polish notation
 		int b = stack.popi();
 		int a = stack.popi();
 		stack.pushb(predicate.test(a,b));
 	}
 
 	void doFloatOperation(BinaryOperator<Float> operation) {
-		// remember, remember, the polish reverse notation 
+		// remember, remember, the reverse polish notation
 		float b = stack.popf();
 		float a = stack.popf();
 		stack.pushf(operation.apply(a,b));
 	}
 
 	void doFloatPredicate(BiPredicate<Float, Float> predicate) {
-		// remember, remember, the polish reverse notation 
+		// remember, remember, the reverse polish notation
 		float b = stack.popf();
 		float a = stack.popf();
 		stack.pushb(predicate.test(a,b));
 	}
 
 	void doBoolPredicate(BiPredicate<Boolean, Boolean> predicate) {
-		// remember, remember, the polish reverse notation 
+		// remember, remember, the reverse polish notation
 		boolean b = stack.popb();
 		boolean a = stack.popb();
 		stack.pushb(predicate.test(a,b));
 	}
 
 	void doBoolSimplePredicate(Predicate<Boolean> predicate) {
-		// remember, remember, the polish reverse notation 
+		// remember, remember, the reverse polish notation
 		boolean value = stack.popb();
 		stack.pushb(predicate.test(value));
 	}
