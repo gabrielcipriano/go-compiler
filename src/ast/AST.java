@@ -97,19 +97,17 @@ public class AST {
 	// Cria um nó e pendura todos os filhos passados como argumento.
 	public static AST newSubtree(NodeKind kind, Type type, AST... children) {
 		AST node = new AST(kind, 0, type);
-	    for (AST child: children) {
-	    	node.addChild(child);
-	    }
-	    return node;
+		for (AST child: children)
+			node.addChild(child);
+		return node;
 	}
 
 	// Cria um nó e pendura todos os filhos passados como argumento.
 	public static AST newSubtree(NodeKind kind, Type type, int intData, AST... children) {
 		AST node = new AST(kind, intData, type);
-			for (AST child: children) {
-				node.addChild(child);
-			}
-			return node;
+		for (AST child: children)
+			node.addChild(child);
+		return node;
 	}
 
 	// Cria um nó e pendura todos os filhos passados como argumento.
@@ -120,10 +118,9 @@ public class AST {
 			if (Type.isI2FTarget(left.type) ){
 				var l = AST.createConvNode(Conv.I2F, left);
 				return new AST[]{ l, right };
-			} else {
-				var r = AST.createConvNode(Conv.I2F, right);
-				return new AST[]{ left, r };
-			}
+			} 
+			var r = AST.createConvNode(Conv.I2F, right);
+			return new AST[]{ left, r };
 		}
 		return new AST[]{ left, right };
 	}
@@ -161,47 +158,55 @@ public class AST {
 
 	// Imprime recursivamente a codificação em DOT da subárvore começando no nó atual.
 	// Usa stderr como saída para facilitar o redirecionamento, mas isso é só um hack.
-	private int printNodeDot() {
+	private int printNodeDot(boolean debug) {
 		int myNr = nr++;
 
-	    System.err.printf("node%d[label=\"", myNr);
-	    if (this.type != NO_TYPE) {
-	    	System.err.printf("(%s) ", this.type.toString());
-	    }
-	    if (this.kind == NodeKind.VAR_DECL_NODE || this.kind == NodeKind.VAR_USE_NODE) {
-				if(vt.get(this.intData).isArray()) 
-					System.err.printf("%s[%d]@", vt.get(this.intData).name, vt.get(this.intData).arraySz);
-	    	else System.err.printf("%s@", vt.get(this.intData).name);
-	    } else if (this.kind == NodeKind.FUNC_CALL_NODE || this.kind ==  NodeKind.FUNC_DECL_NODE) {
-	    	System.err.printf("%s@", ft.get(this.intData).name);
-	    } else {
-	    	System.err.printf("%s", this.kind.toString());
-	    }
-	    if (NodeKind.hasData(this.kind)) {
-	        if (this.kind == NodeKind.FLOAT_LIT_NODE) {
-	        	System.err.printf("%.2f", this.floatData);
-	        } else if (this.kind == NodeKind.STR_LIT_NODE) {
-	        	System.err.printf("@%d", this.intData);
-	        } else {
-	        	System.err.printf("%d", this.intData);
-	        }
-	    }
-	    System.err.printf("\"];\n");
+		System.err.printf("node%d[label=\"", myNr);
+		if (this.type != NO_TYPE) {
+			System.err.printf("(%s) ", this.type.toString());
+		}
+		if (this.kind == NodeKind.VAR_DECL_NODE || this.kind == NodeKind.VAR_USE_NODE) {
+			if(vt.get(this.intData).isArray()) 
+				System.err.printf("%s[%d]@", vt.get(this.intData).name, vt.get(this.intData).arraySz);
+			else
+				System.err.printf("%s@", vt.get(this.intData).name);
+		} else if (this.kind == NodeKind.FUNC_CALL_NODE || this.kind ==  NodeKind.FUNC_DECL_NODE) {
+			System.err.printf("%s@", ft.get(this.intData).name);
+		} else if (!debug)
+			System.err.printf("%s", this.kind.toString());
+		if (NodeKind.hasData(this.kind)) {
+				if (this.kind == NodeKind.FLOAT_LIT_NODE) {
+					System.err.printf("%.2f", this.floatData);
+				} else if (this.kind == NodeKind.STR_LIT_NODE) {
+					System.err.printf("@%d", this.intData);
+				} else {
+					System.err.printf("%d", this.intData);
+				}
+		}
+		if(debug) {
+			String name = this.kind.name();
+			System.err.printf(" %s\"];\n", name.substring(0, name.length() - 5));
+		} else
+			System.err.printf("\"];\n");
 
-	    for (int i = 0; i < this.children.size(); i++) {
-	        int childNr = this.children.get(i).printNodeDot();
-	        System.err.printf("node%d -> node%d;\n", myNr, childNr);
-	    }
-	    return myNr;
+		for (int i = 0; i < this.children.size(); i++) {
+				int childNr = this.children.get(i).printNodeDot(debug);
+				System.err.printf("node%d -> node%d;\n", myNr, childNr);
+		}
+		return myNr;
 	}
 
 	// Imprime a árvore toda em stderr.
 	public static void printDot(AST tree, VarTable varTable, FunctionTable funcTable) {
-	    nr = 0;
-	    vt = varTable;
-	    ft = funcTable;
-	    System.err.printf("digraph {\ngraph [ordering=\"out\"];\n");
-	    tree.printNodeDot();
-	    System.err.printf("}\n");
+		nr = 0;
+		vt = varTable;
+		ft = funcTable;
+		System.err.printf("digraph {\ngraph [ordering=\"out\"];\n");
+
+		String debug = System.getenv().get("DEBUG");
+		boolean isDebugging = debug.equals("true") || debug.equals("1");
+
+		tree.printNodeDot(isDebugging);
+		System.err.printf("}\n");
 	}
 }

@@ -12,26 +12,42 @@ import java.util.Stack;
 public final class DataStack extends Stack<Word> {
 	// No mundo real esses métodos precisam de verificações de erros.
 	
-	public void pushi(int value) {
+	// public void pushi(int value) {
+	// 	super.push(Word.fromInt(value));
+	// }
+
+	public void push(int value) {
 		super.push(Word.fromInt(value));
+	}
+
+	public void push(float value) {
+		super.push(Word.fromFloat(value));
+	}
+
+	public void push(boolean value) {
+		super.push(Word.fromBool(value));
 	}
 
 	public int popi() {
 		return super.pop().toInt();
 	}
 	
-	public void pushf(float value) {
-		super.push(Word.fromFloat(value));
-	}
+	// public void pushf(float value) {
+	// 	super.push(Word.fromFloat(value));
+	// }
+
+
 
 	public float popf() {
 		return super.pop().toFloat();
 	}
 
 	// booleans
-	public void pushb(boolean value) {
-		super.push(Word.fromBool(value));
-	}
+	// public void pushb(boolean value) {
+	// 	super.push(Word.fromBool(value));
+	// }
+
+
 
 	public boolean popb() {
 		return super.pop().toBool();

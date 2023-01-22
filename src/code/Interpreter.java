@@ -53,6 +53,8 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 	// TODO
 	@Override
 	protected Void visitShortVarDecl(AST node) {
+		visit(node.getChild(1));
+
 		return null;
 	}
 
@@ -62,24 +64,22 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 		return null;
 	}
 
-	// TODO
 	@Override
 	protected Void visitVarDecl(AST node) {
+		// nada a fazer. O espaço na memória já foi reservado de acordo com a vartable
 		return null;
 	}
 
-	// TODO
 	@Override
 	protected Void visitVarDeclList(AST node) {
-		return null;
+		// possui nós ou de varDeclare (sem atribuição)
+		// ou de ShortVarDecl (que possui atribuição)
+		return visitAllChildren(node); 
 	}
 
 	@Override
 	protected Void visitBlock(AST node) {
-		Iterator<AST> children = node.iterateChildren();
-		while(children.hasNext())
-			visit(children.next());
-		return null;
+		return visitAllChildren(node);
 	}
 
 	// TODO
@@ -167,26 +167,26 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 
 	@Override
 	protected Void visitIntLit(AST node) {
-		stack.pushi(node.intData);
+		stack.push(node.intData);
 		return null;
 	}
 
 	@Override
 	protected Void visitFloatLit(AST node) {
-		stack.pushf(node.floatData);
+		stack.push(node.floatData);
 		return null;
 	}
 
 	@Override
 	protected Void visitBoolLit(AST node) {
-		stack.pushb(node.getBoolData());
+		stack.push(node.getBoolData());
 		return null;
 	}
 
 	@Override
 	protected Void visitStrLit(AST node) {
 		int strIndex = node.intData;
-		stack.pushi(strIndex);
+		stack.push(strIndex);
 		return null;
 	}
 
@@ -344,7 +344,7 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 		else if (node.isBool())
 			cpu.doBoolPredicate((a,b) -> a == b);
 		else // string
-			cpu.doStrPredicate((a,b) -> a == b);
+			cpu.doStrPredicate((a,b) -> a.equals(b));
 
 		return null;
 	}
@@ -405,11 +405,18 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 		visit(node.getChild(0));
 
 		int value = stack.popi();
-		stack.pushf((float) value);
+		stack.push((float) value);
 
 		return null;
 	}
 
 	// *** HELPERS ***
+
+	private Void visitAllChildren(AST node) {
+		Iterator<AST> children = node.iterateChildren();
+		while(children.hasNext())
+			visit(children.next());
+		return null;
+	}
 	
 }

@@ -24,48 +24,48 @@ public class Cpu {
 		// remember, remember, the reverse polish notation
 		int b = stack.popi();
 		int a = stack.popi();
-		stack.pushi(operation.apply(a,b));
+		stack.push(operation.apply(a,b));
 	}
 
 	void doIntPredicate(BiPredicate<Integer, Integer> predicate) {
 		// remember, remember, the reverse polish notation
 		int b = stack.popi();
 		int a = stack.popi();
-		stack.pushb(predicate.test(a,b));
+		stack.push(predicate.test(a,b));
 	}
 
 	void doFloatOperation(BinaryOperator<Float> operation) {
 		// remember, remember, the reverse polish notation
 		float b = stack.popf();
 		float a = stack.popf();
-		stack.pushf(operation.apply(a,b));
+		stack.push(operation.apply(a,b));
 	}
 
 	void doFloatPredicate(BiPredicate<Float, Float> predicate) {
 		// remember, remember, the reverse polish notation
 		float b = stack.popf();
 		float a = stack.popf();
-		stack.pushb(predicate.test(a,b));
+		stack.push(predicate.test(a,b));
 	}
 
 	void doBoolPredicate(BiPredicate<Boolean, Boolean> predicate) {
 		// remember, remember, the reverse polish notation
 		boolean b = stack.popb();
 		boolean a = stack.popb();
-		stack.pushb(predicate.test(a,b));
+		stack.push(predicate.test(a,b));
 	}
 
 	void doBoolSimplePredicate(Predicate<Boolean> predicate) {
 		// remember, remember, the reverse polish notation
 		boolean value = stack.popb();
-		stack.pushb(predicate.test(value));
+		stack.push(predicate.test(value));
 	}
 
   protected Void doStrPredicate(BiPredicate<String, String> predicate) {
 		String b = st.get(stack.popi());
 		String a = st.get(stack.popi());
 		
-		stack.pushb(predicate.test(a,b));
+		stack.push(predicate.test(a,b));
 		return null;
 	}
 
@@ -73,7 +73,7 @@ public class Cpu {
 		String b = st.get(stack.popi());
 		String a = st.get(stack.popi());
 		int idx = st.addString(operation.apply(a, b));
-		stack.pushi(idx);
+		stack.push(idx);
 		return null;
 	}
 
