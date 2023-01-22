@@ -36,18 +36,9 @@ public final class VarTable {
 		}
 		return -1;
 	}
-
-	public int addVar(String s, int line, int scope, Type type) {
-		VarEntry entry = new VarEntry(s, line, scope, type);
+	public int addVar(VarEntry varEntry) {
 		int idxAdded = table.size();
-		table.add(entry);
-		return idxAdded;
-	}
-
-	public int addVar(String s, int line, int scope, Type type, int arraySz) {
-		VarEntry entry = new VarEntry(s, line, scope, type, arraySz);
-		int idxAdded = table.size();
-		table.add(entry);
+		table.add(varEntry);
 		return idxAdded;
 	}
 

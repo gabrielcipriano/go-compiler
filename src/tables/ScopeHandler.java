@@ -24,14 +24,16 @@ public final class ScopeHandler {
     return null;
   }
 
-  public Void addVar(String name, int line, Type type, int arraySz) {
-    this.scopes.getLast().add(new VarEntry(name, line, this.scopeDepth, type, arraySz));
-    return null;
+  public VarEntry addVar(String name, int line, Type type, int arraySz, boolean isConst) {
+    VarEntry newVar = new VarEntry(name, line, this.scopeDepth, type, arraySz, isConst);
+    this.scopes.getLast().add(newVar);
+    return newVar;
   }
 
-  public Void addVar(String name, int line, Type type) {
-    this.scopes.getLast().add(new VarEntry(name, line, this.scopeDepth, type));
-    return null;
+  public VarEntry addVar(String name, int line, Type type, boolean isConst) {
+    VarEntry newVar = new VarEntry(name, line, this.scopeDepth, type, isConst);
+    this.scopes.getLast().add(newVar);
+    return newVar;
   }
 
   public VarEntry lookupVar(String name) {

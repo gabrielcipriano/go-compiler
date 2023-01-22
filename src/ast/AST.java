@@ -125,10 +125,6 @@ public class AST {
 		return new AST[]{ left, right };
 	}
 
-	// Cria e retorna um novo nó de conversão da AST segundo o parâmetro 'conv' passado.
-	// O parâmetro 'n' é o nó que será pendurado como filho do nó de conversão.
-	// Caso a conversão indicada seja 'NONE', a função simplesmente retorna o próprio
-	// nó passado como argumento.
 	public static AST createConvNode(Conv conv, AST n) {
 		switch(conv) {
 			case I2F:  return AST.newSubtree(NodeKind.I2F_NODE, Type.FLOAT32_TYPE, n);
@@ -165,7 +161,7 @@ public class AST {
 		if (this.type != NO_TYPE) {
 			System.err.printf("(%s) ", this.type.toString());
 		}
-		if (this.kind == NodeKind.VAR_DECL_NODE || this.kind == NodeKind.VAR_USE_NODE) {
+		if (this.kind == NodeKind.VAR_DECL_NODE || this.kind == NodeKind.VAR_USE_NODE || this.kind == NodeKind.VAR_ASSIGN_NODE) {
 			if(vt.get(this.intData).isArray()) 
 				System.err.printf("%s[%d]@", vt.get(this.intData).name, vt.get(this.intData).arraySz);
 			else

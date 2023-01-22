@@ -17,6 +17,7 @@ public enum NodeKind {
     ASSIGN_LIST_NODE,
     VAR_DECL_LIST_NODE,
     VAR_USE_NODE,
+    VAR_ASSIGN_NODE,
     ASSIGN_NODE,
     BLOCK_NODE,
     IF_NODE,
