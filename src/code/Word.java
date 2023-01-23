@@ -58,5 +58,4 @@ public class Word {
 		return intBits != 0;
 	}
 
-	
 }

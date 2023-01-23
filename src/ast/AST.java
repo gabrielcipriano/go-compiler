@@ -63,6 +63,10 @@ public class AST {
 		return this.children.get(idx);
 	}
 
+	public boolean hasChild(int idx) {
+		return idx < this.children.size();
+	}
+
 	public Iterator<AST> iterateChildren() {
 		return this.children.iterator();
 	}

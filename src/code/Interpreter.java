@@ -38,19 +38,31 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 
 	@Override
 	protected Void visitProgram(AST node) {
-		visit(node.getChild(0)); // run var_list
+		// visit(node.getChild(0)); // run var_list
 		// visit(node.getChild(1)); // run block
+
+		visitAllChildren(node);
+		System.out.println(memory.toString());
 		io.close();
+
 		return null; // Java exige um valor de retorno mesmo para Void... :/
 	}
 
 	// TODO
 	@Override
 	protected Void visitAssign(AST node) {
+		// visits var assign (stacking var index)
+		visit(node.getChild(0));
+		// visits expression
+		visit(node.getChild(1));
+
+		Word value = stack.pop();
+		int varIndex = stack.popi();
+
+		memory.add(varIndex, value);
 		return null;
 	}
 
-	// TODO
 	@Override
 	protected Void visitShortVarDecl(AST node) {
 		// visits var assign (stacking var index)
@@ -65,10 +77,9 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 		return null;
 	}
 
-	// TODO
 	@Override
 	protected Void visitAssignList(AST node) {
-		return null;
+		return visitAllChildren(node); // visits all varAssign
 	}
 
 	@Override
@@ -109,22 +120,25 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 		return null;
 	}
 
-	// TODO
 	@Override
 	protected Void visitIf(AST node) {
+		// visits clause, stacking boolean result
+		visit(node.getChild(0));
+		if (stack.popb() == true)
+			visit(node.getChild(1)); // block
+		else if (node.hasChild(2)) // has else stmt
+			visit(node.getChild(2));
 		return null;
 	}
 
-	// TODO
 	@Override
 	protected Void visitIfClause(AST node) {
-		return null;
+		return visitAllChildren(node);
 	}
 
-	// TODO
 	@Override
 	protected Void visitElse(AST node) {
-		return null;
+		return visitAllChildren(node);
 	}
 
 	// TODO
