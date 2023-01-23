@@ -39,7 +39,7 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 	@Override
 	protected Void visitProgram(AST node) {
 		visit(node.getChild(0)); // run var_list
-		visit(node.getChild(1)); // run block
+		// visit(node.getChild(1)); // run block
 		io.close();
 		return null; // Java exige um valor de retorno mesmo para Void... :/
 	}
@@ -53,8 +53,15 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 	// TODO
 	@Override
 	protected Void visitShortVarDecl(AST node) {
+		// visits var assign (stacking var index)
+		visit(node.getChild(0));
+		// visits expression
 		visit(node.getChild(1));
 
+		Word value = stack.pop();
+		int varIndex = stack.popi();
+
+		memory.add(varIndex, value);
 		return null;
 	}
 
@@ -75,6 +82,14 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 		// possui nós ou de varDeclare (sem atribuição)
 		// ou de ShortVarDecl (que possui atribuição)
 		return visitAllChildren(node); 
+	}
+
+	// TODO
+	@Override
+	protected Void visitVarAssign(AST node) {
+		int varIndex = node.intData;
+		stack.push(varIndex);
+		return null;
 	}
 
 	@Override
@@ -142,15 +157,20 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 		return null;
 	}
 
-	// TODO
-	@Override
-	protected Void visitWrite(AST node) {
-		return null;
-	}
-
-	// TODO
 	@Override
 	protected Void visitPrint(AST node) {
+		Iterator<AST> children = node.iterateChildren();
+		while (children.hasNext()) {
+			AST exprToPrint = children.next();
+			visit(exprToPrint); // pushes expr value to stack
+			switch (exprToPrint.type) {
+				case INT_TYPE: io.writeInt(); break;
+				case FLOAT32_TYPE: io.writeReal(); break;
+				case BOOLEAN_TYPE: io.writeBool(); break;
+				case STRING_TYPE: io.writeStr(); break;
+				default: System.out.println("Should never happen");
+			}
+		}
 		return null;
 	}
 
@@ -204,7 +224,8 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 	
 		// TODO: TRATAR ARRAY(??)
 
-		// ((ACHO)) que dá pra fazer isso diretamente sem checar o tipo, pois ambos usam word internamente
+		// ((ACHO)) que dá pra fazer isso diretamente sem checar o tipo
+		// pois ambos stack e memory usam word internamente
 		Word word = memory.get(varIndex);
 		stack.push(word);
 		

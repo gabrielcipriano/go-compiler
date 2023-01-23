@@ -30,7 +30,6 @@ public enum NodeKind {
     FOR_NODE,
     DIV_NODE,
     TIMES_NODE,
-    WRITE_NODE,
     // Type conversion nodes
     I2F_NODE,
     
@@ -81,7 +80,6 @@ public enum NodeKind {
             case ASSIGN_LIST_NODE:  return "assign_list";
             case VAR_DECL_LIST_NODE:return "decl_list";
             case VAR_USE_NODE:      return "var_use";
-            case WRITE_NODE:        return "write";
             case I2F_NODE:          return "I2F";
             case AND_NODE:          return "&&";
             case PRINT_NODE:        return "print" ;

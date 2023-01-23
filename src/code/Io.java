@@ -46,7 +46,7 @@ public class Io {
 		int strIdx = stack.popi(); // String pointer
 		String originalStr = st.get(strIdx);
 		String unescapedStr = unescapeStr(originalStr);
-		System.out.print(unescapedStr);
+		System.out.println(unescapedStr);
 		return null;
 	}
 

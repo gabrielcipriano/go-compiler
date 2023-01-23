@@ -14,6 +14,7 @@ public abstract class ASTBaseVisitor<T> {
 			case ASSIGN_LIST_NODE:  return visitAssignList(node);
 			case VAR_DECL_NODE:     return visitVarDecl(node);
 			case VAR_DECL_LIST_NODE: return visitVarDeclList(node);
+			case VAR_ASSIGN_NODE:	   return visitVarAssign(node);
 			case SHORT_VAR_DECL_NODE:return visitShortVarDecl(node);
 			case FUNC_DECL_NODE:    return visitFuncDecl(node);
 			case RETURN_NODE:       return visitReturn(node);
@@ -26,7 +27,6 @@ public abstract class ASTBaseVisitor<T> {
 			case DECREMENT:         return visitDecrement(node);
 
 			case READ_NODE:         return visitRead(node);
-			case WRITE_NODE:        return visitWrite(node);
 			case PRINT_NODE:        return visitPrint(node);
 
 			// *** LITERALS ***
@@ -80,6 +80,8 @@ public abstract class ASTBaseVisitor<T> {
 
 	protected abstract T visitVarDecl(AST node);
 
+	protected abstract T visitVarAssign(AST node);
+
 	protected abstract T visitVarDeclList(AST node);
 
 	protected abstract T visitFuncDecl(AST node);
@@ -101,8 +103,6 @@ public abstract class ASTBaseVisitor<T> {
 	protected abstract T visitDecrement(AST node);
 
 	protected abstract T visitRead(AST node);
-
-	protected abstract T visitWrite(AST node);
 
 	protected abstract T visitPrint(AST node);
 

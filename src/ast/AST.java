@@ -57,7 +57,7 @@ public class AST {
 
 	public AST getChild(int idx) {
 		if (idx >= this.children.size()) {
-			System.err.printf("zé vc tá tentando acessar um index que n possui valor");
+			System.err.printf("zé vc tá tentando acessar um index que n possui valor\n");
 			System.exit(1);
 		}
 		return this.children.get(idx);

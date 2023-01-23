@@ -8,6 +8,7 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import parser.GOLexer;
 import parser.GOParser;
 import checker.SemanticChecker;
+import code.Interpreter;
 
 public class Main {
   /*
@@ -59,5 +60,10 @@ public class Main {
 		System.out.println("PARSE SUCCESSFUL!");
 		checker.printTables();
 		checker.printAST();
+
+		System.out.println("*** RUNNING ***\n");
+	
+		Interpreter interpreter = new Interpreter(checker.st, checker.vt);
+		interpreter.execute(checker.getAST());
 	}
 }
