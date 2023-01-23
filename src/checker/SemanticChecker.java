@@ -1,20 +1,16 @@
 package checker;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import parser.GOParser;
-import parser.GOParser.Program_sectContext;
 import parser.GOParser.AssigneeContext;
 import parser.GOParser.ExprContext;
 import parser.GOParser.ParameterDeclContext;
-import parser.GOParser.StatementContext;
 import parser.GOParser.TypeContext;
 import parser.GOParserBaseVisitor;
 import tables.FunctionEntry;
@@ -38,9 +34,9 @@ import ast.NodeKind;
 
 public class SemanticChecker extends GOParserBaseVisitor<AST> {
 
-	private StrTable 		st = new StrTable(); // Tabela de strings.
-	private FunctionTable 	ft = new FunctionTable();
-	private VarTable 		vt = new VarTable(); // Tabela de variáveis.
+	public StrTable 			st = new StrTable();
+	public VarTable 		  vt = new VarTable();
+	private FunctionTable ft = new FunctionTable();
 	private ScopeHandler 	sh = new ScopeHandler();
 
 	private AST root;
@@ -208,14 +204,23 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 	public AST visitProgram(GOParser.ProgramContext ctx) {
 		sh.push();
 		this.root = AST.newSubtree(NodeKind.PROGRAM_NODE, NO_TYPE);
-		visit(ctx.package_clause());
-		for(var line : ctx.program_sect()){
-			AST children = visit(line);
-			if(children!= null){
+		// visit(ctx.package_clause());
+		// for(var line : ctx.program_sect()){
+		// 	AST children = visit(line);
+		// 	if(children!= null){
+		// 		root.addChild(children);
+		// 	}
+		// }
+		for (var ifNode : ctx.children) {
+			AST children = visit(ifNode);
+			if(children != null)
 				root.addChild(children);
-			}
 		}
 		return root;
+	}
+
+	public AST getAST() {
+		return this.root;
 	}
 
 	@Override
@@ -231,9 +236,8 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 		if (ctx.statement_list() != null)
 			for(var line : ctx.statement_list().statement()){
 				AST child = visit(line);
-				if(child != null){
+				if(child != null)
 					block.addChild(child);
-				}
 			}
 		return block;
 	}
@@ -566,17 +570,19 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 	public AST visitIf_stmt(GOParser.If_stmtContext ctx) {
 		AST ifNode = AST.newSubtree(NodeKind.IF_NODE, Type.NO_TYPE);
 		AST clauseNode = AST.newSubtree(NodeKind.IF_CLAUSE_NODE, NO_TYPE);
+		sh.push();
+
 		if(ctx.simple_stmt() != null){
 			AST simpleNode = visit(ctx.simple_stmt());
 			clauseNode.addChild(simpleNode);
 		}
+		sh.push();
 		AST exprNode = visit(ctx.expr());
 		clauseNode.addChild(exprNode);
 		if(exprNode.type != BOOLEAN_TYPE)
 			PANIC("SEMANTIC ERROR [Invalid expr] (%d): cannot convert '%s' (%s) to %s\n",
 				ctx.start.getLine(), ctx.expr().getText(), exprNode.type.toString(), BOOLEAN_TYPE.toString());
 
-		sh.push();
 		AST blockNode = visit(ctx.block(0));
 		ifNode.addChild(clauseNode);
 		ifNode.addChild(blockNode);
@@ -591,6 +597,7 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 				elseNode = AST.newSubtree(NodeKind.ELSE_NODE, Type.NO_TYPE, visit(ctx.block(1)));
 			ifNode.addChild(elseNode);
 		}
+		sh.pop();
 		sh.pop();
 		return ifNode;
 	}
@@ -717,7 +724,9 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 
 		NodeKind node = ctx.PLUS() != null ? NodeKind.PLUS_NODE : NodeKind.MINUS_NODE;
 		
-		if (l.type == STRING_TYPE && r.type == STRING_TYPE && node == NodeKind.PLUS_NODE)
+		if (l.type == STRING_TYPE 
+			&& r.type == STRING_TYPE 
+			&& node == NodeKind.PLUS_NODE)
 			return AST.newSubtree(node, STRING_TYPE, l, r);
 
 		if (!Type.isBothNumbers(l.type, r.type))

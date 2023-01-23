@@ -42,13 +42,13 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 		// visit(node.getChild(1)); // run block
 
 		visitAllChildren(node);
+		System.out.println();
 		System.out.println(memory.toString());
 		io.close();
 
 		return null; // Java exige um valor de retorno mesmo para Void... :/
 	}
 
-	// TODO
 	@Override
 	protected Void visitAssign(AST node) {
 		// visits var assign (stacking var index)
@@ -95,7 +95,6 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 		return visitAllChildren(node); 
 	}
 
-	// TODO
 	@Override
 	protected Void visitVarAssign(AST node) {
 		int varIndex = node.intData;
@@ -256,9 +255,17 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 	protected Void visitMinus(AST node) {
 		// remember, remember, the reverse polish notation
 		visit(node.getChild(0));
+		if (!node.hasChild(1)){ // unary
+			if (node.getChild(0).isInt())
+				stack.push(-stack.popi());
+			else
+				stack.push(-stack.popf());
+			return null;
+		}
+
 		visit(node.getChild(1));
 
-		if (node.isInt())
+		if (node.getChild(0).isInt())
 			cpu.doIntOperation((a,b) -> a - b);
 		else
 			cpu.doFloatOperation((a,b) -> a - b);
@@ -270,11 +277,15 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 	protected Void visitPlus(AST node) {
 		// remember, remember, the reverse polish notation
 		visit(node.getChild(0));
+
+		if (!node.hasChild(1)) // unary
+			return null;
+
 		visit(node.getChild(1));
 
-		if (node.isInt())
+		if (node.getChild(0).isInt())
 			cpu.doIntOperation((a,b) -> a + b);
-		else if (node.isFloat())
+		else if (node.getChild(0).isFloat())
 			cpu.doFloatOperation((a,b) -> a + b);
 		else // string
 			cpu.doStrOperation((a,b) -> a + b);
@@ -288,7 +299,7 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 		visit(node.getChild(0));
 		visit(node.getChild(1));
 	
-		if (node.isInt())
+		if (node.getChild(0).isInt())
 			cpu.doIntOperation((a,b) -> a / b);
 		else
 			cpu.doFloatOperation((a,b) -> a / b);
@@ -302,7 +313,7 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 		visit(node.getChild(0));
 		visit(node.getChild(1));
 
-		if (node.isInt())
+		if (node.getChild(0).isInt())
 			cpu.doIntOperation((a,b) -> a * b);
 		else
 			cpu.doFloatOperation((a,b) -> a * b);
@@ -316,7 +327,7 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 		visit(node.getChild(0));
 		visit(node.getChild(1));
 
-		if (node.isInt())
+		if (node.getChild(0).isInt())
 			cpu.doIntPredicate((a,b) -> a < b);
 		else
 			cpu.doFloatPredicate((a,b) -> a < b);
@@ -330,7 +341,7 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 		visit(node.getChild(0));
 		visit(node.getChild(1));
 
-		if (node.isInt())
+		if (node.getChild(0).isInt())
 			cpu.doIntPredicate((a,b) -> a <= b);
 		else
 			cpu.doFloatPredicate((a,b) -> a <= b);
@@ -344,7 +355,7 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 		visit(node.getChild(0));
 		visit(node.getChild(1));
 
-		if (node.isInt())
+		if (node.getChild(0).isInt())
 			cpu.doIntPredicate((a,b) -> a >= b);
 		else
 			cpu.doFloatPredicate((a,b) -> a >= b);
@@ -358,7 +369,7 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 		visit(node.getChild(0));
 		visit(node.getChild(1));
 
-		if (node.isInt())
+		if (node.getChild(0).isInt())
 			cpu.doIntPredicate((a,b) -> a > b);
 		else
 			cpu.doFloatPredicate((a,b) -> a > b);
@@ -372,11 +383,11 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 		visit(node.getChild(0));
 		visit(node.getChild(1));
 
-		if (node.isInt())
+		if (node.getChild(0).isInt())
 			cpu.doIntPredicate((a,b) -> a == b);
-		else if (node.isFloat())
+		else if (node.getChild(0).isFloat())
 			cpu.doFloatPredicate((a,b) -> a == b);
-		else if (node.isBool())
+		else if (node.getChild(0).isBool())
 			cpu.doBoolPredicate((a,b) -> a == b);
 		else // string
 			cpu.doStrPredicate((a,b) -> a.equals(b));
@@ -389,15 +400,15 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 		// remember, remember, the polish reverse notation
 		visit(node.getChild(0));
 		visit(node.getChild(1));
-	
-		if (node.isInt())
-			cpu.doIntPredicate((a,b) -> a != b);
-		else if (node.isFloat())
-			cpu.doFloatPredicate((a,b) -> a != b);
-		else if (node.isBool())
-			cpu.doBoolPredicate((a,b) -> a != b);
+
+		if (node.getChild(0).isInt())
+			cpu.doIntPredicate((a, b) -> a != b);
+		else if (node.getChild(0).isFloat())
+			cpu.doFloatPredicate((a, b) -> a != b);
+		else if (node.getChild(0).isBool())
+			cpu.doBoolPredicate((a, b) -> a != b);
 		else // string
-		  cpu.doStrPredicate((a,b) -> a != b);
+		  cpu.doStrPredicate((a,b) -> !a.equals(b));
 
 		return null;
 	}
