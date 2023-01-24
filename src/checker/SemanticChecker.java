@@ -529,7 +529,7 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 		AST blockNode = visit(ctx.block());
 
 		AST funcNode = AST.newSubtree(NodeKind.FUNC_DECL_NODE, NO_TYPE, idx, paramsNode, blockNode);
-
+		ft.get(idx).setFuncDeclare(funcNode);
 		sh.pop();
 		
 		return funcNode;
