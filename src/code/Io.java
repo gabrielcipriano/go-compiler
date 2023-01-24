@@ -56,14 +56,14 @@ public class Io {
 	protected Void readInt(int varIdx) {
 		System.out.printf("read (int): ");
 		int value = in.nextInt();
-		memory.storei(varIdx, value);
+		memory.store(varIdx, value);
 		return null; // Java exige um valor de retorno mesmo para Void... :/
 	}
 
 	protected Void readReal(int varIdx) {
 		System.out.printf("read (real): ");
 		float value = in.nextFloat();
-		memory.storef(varIdx, value);
+		memory.store(varIdx, value);
 		return null; // Java exige um valor de retorno mesmo para Void... :/
 	}
 
@@ -73,7 +73,7 @@ public class Io {
 	        System.out.printf("read (bool - 0 = false, 1 = true): ");
 	        value = in.nextInt();
 	    } while (value != 0 && value != 1);
-	    memory.storeb(varIdx, value == 1);
+	    memory.store(varIdx, value == 1);
 	    return null; // Java exige um valor de retorno mesmo para Void... :/
 	}
 
@@ -81,7 +81,7 @@ public class Io {
 		System.out.printf("read (str): ");
 		String s = in.next();
 		int strIdx = st.addString(s);
-		memory.storei(varIdx, strIdx);
+		memory.store(varIdx, strIdx);
 		return null; // Java exige um valor de retorno mesmo para Void... :/
 	}
 

@@ -59,7 +59,7 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 		Word value = stack.pop();
 		int varIndex = stack.popi();
 
-		memory.add(varIndex, value);
+		memory.store(varIndex, value);
 		return null;
 	}
 
@@ -73,7 +73,7 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 		Word value = stack.pop();
 		int varIndex = stack.popi();
 
-		memory.add(varIndex, value);
+		memory.store(varIndex, value);
 		return null;
 	}
 
@@ -140,27 +140,66 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 		return visitAllChildren(node);
 	}
 
-	// TODO
 	@Override
 	protected Void visitFor(AST node) {
+
+		AST clause = node.getChild(0);
+		// Avaliar pros casos sem ini_stmt e post_stmt
+		if(clause.hasChild(1)){
+			visit(clause);
+			visit(clause.getChild(1));
+			while(stack.popb()){
+				visit(node.getChild(1));
+				visit(clause.getChild(2));
+				visit(clause.getChild(1));
+			}
+			return null;
+		}
+
+		
+		visit(clause.getChild(0));
+		while(stack.popb()){
+			visit(node.getChild(1));
+			visit(clause.getChild(0));
+		}
+
 		return null;
 	}
 
 	// TODO
 	@Override
 	protected Void visitForClause(AST node) {
+		visit(node.getChild(0));
+
 		return null;
 	}
 
-	// TODO
 	@Override
 	protected Void visitIncrement(AST node) {
+		visitAllChildren(node);
+
+		if(node.getChild(0).isInt()){
+			cpu.doIntUnaryOperation((a) -> a + 1);
+			Word value = stack.pop();
+			int varIndex = stack.popi();
+			memory.store(varIndex,value);
+		}
+		
 		return null;
 	}
 
 	// TODO
 	@Override
 	protected Void visitDecrement(AST node) {
+		visitAllChildren(node);
+
+		if(node.getChild(0).isInt()){
+			cpu.doIntUnaryOperation((a) -> a - 1);
+			Word value = stack.pop();
+			int varIndex = stack.popi();
+			memory.store(varIndex,value);
+		}
+		
 		return null;
 	}
 

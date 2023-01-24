@@ -450,9 +450,13 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 
 	@Override
 	public AST visitInc_dec_stmt(GOParser.Inc_dec_stmtContext ctx){
+
+		AST varUsed = visit(ctx.operand_name());
+		AST varAssigned = new AST(NodeKind.VAR_ASSIGN_NODE, varUsed.intData, varUsed.type);
+		
 		if(ctx.INCREMENT() != null)
-			return AST.newSubtree(NodeKind.INCREMENT, NO_TYPE, visit(ctx.expr()));
-		return AST.newSubtree(NodeKind.DECREMENT, NO_TYPE, visit(ctx.expr()));
+			return AST.newSubtree(NodeKind.INCREMENT, NO_TYPE, varAssigned, varUsed);
+		return AST.newSubtree(NodeKind.DECREMENT, NO_TYPE, varAssigned, varUsed);
 	}
 
 //region Types

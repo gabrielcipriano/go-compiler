@@ -3,6 +3,7 @@ package code;
 import java.util.function.BiPredicate;
 import java.util.function.BinaryOperator;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 
 import tables.StrTable;
 import tables.VarTable;
@@ -20,7 +21,13 @@ public class Cpu {
 		this.vt = vt;
 	}
 
-  void doIntOperation(BinaryOperator<Integer> operation) {
+	void doIntUnaryOperation(UnaryOperator<Integer> operation) {
+		// remember, remember, the reverse polish notation
+		int value = stack.popi();
+		stack.push(operation.apply(value));
+	}
+
+  	void doIntOperation(BinaryOperator<Integer> operation) {
 		// remember, remember, the reverse polish notation
 		int b = stack.popi();
 		int a = stack.popi();

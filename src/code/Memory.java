@@ -24,26 +24,28 @@ public class Memory extends Vector<Word> {
 		}
 	}
 
-	// No mundo real esses métodos precisam de verificações de erros.
+	public void store(int addr, Word word) {
+		this.set(addr, word);
+	}
 	
-	public void storei(int addr, int value) {
+	public void store(int addr, boolean value) {
+		this.set(addr, Word.fromBool(value));
+	}
+
+	public void store(int addr, int value) {
 		this.set(addr, Word.fromInt(value));
+	}
+
+	public void store(int addr, float value) {
+		this.set(addr, Word.fromFloat(value));
 	}
 	
 	public int loadi(int addr) {
 		return this.get(addr).toInt();
 	}
 	
-	public void storef(int addr, float value) {
-		this.set(addr, Word.fromFloat(value));
-	}
-	
 	public float loadf(int addr) {
 		return this.get(addr).toFloat();
-	}
-
-	public void storeb(int addr, boolean value) {
-		this.set(addr, Word.fromBool(value));
 	}
 	
 	public boolean loadb(int addr) {
