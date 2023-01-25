@@ -27,7 +27,7 @@ public class Cpu {
 		stack.push(operation.apply(value));
 	}
 
-  	void doIntOperation(BinaryOperator<Integer> operation) {
+	void doIntOperation(BinaryOperator<Integer> operation) {
 		// remember, remember, the reverse polish notation
 		int b = stack.popi();
 		int a = stack.popi();
