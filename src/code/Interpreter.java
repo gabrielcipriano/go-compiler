@@ -3,6 +3,8 @@ import java.util.Iterator;
 
 import ast.AST;
 import ast.ASTBaseVisitor;
+import tables.FunctionEntry;
+import tables.FunctionTable;
 import tables.StrTable;
 import tables.VarTable;
 
@@ -20,20 +22,25 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 
 	// Tudo privado e final para simplificar.
 	private final DataStack stack;
+	private final CallStack callStack;
+	private final FunctionTable ft;
 	private final Memory memory;
 	private final StrTable st;
 	private final VarTable vt;
 	private final Cpu cpu;
 	private final Io io;
+	
 
 	// Construtor basicão.
-	public Interpreter(StrTable st, VarTable vt) {
+	public Interpreter(StrTable st, VarTable vt, FunctionTable ft) {
 		this.stack = new DataStack();
 		this.memory = new Memory(vt);
 		this.st = st;
 		this.vt = vt;
+		this.ft = ft;
 		this.cpu = new Cpu(stack, memory, st, vt);
 		this.io = new Io(stack, memory, st);
+		this.callStack = new CallStack(memory,vt);
 	}
 
 	@Override
@@ -42,8 +49,24 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 		// visit(node.getChild(1)); // run block
 
 		visitAllChildren(node);
+    boolean hasMain = false;
+		for (int i = 0; i < ft.getSize() ; i++) {
+			FunctionEntry funcEntry = ft.get(i);
+      System.out.println(funcEntry.name);
+			if (funcEntry.name.equals("main")) {
+				callStack.push(i);
+				visit(funcEntry.declareNode.getChild(1));
+				callStack.pop();
+				hasMain = true;
+        break;
+			}
+		}
+    if(!hasMain) {
+      System.err.println("PLEASE PROVIDE A MAIN FUNCTION");
+			System.exit(1);
+		}
 		System.out.println();
-		System.out.println(memory.toString());
+		System.out.println(memory);
 		io.close();
 
 		return null; // Java exige um valor de retorno mesmo para Void... :/
@@ -59,7 +82,7 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 		Word value = stack.pop();
 		int varIndex = stack.popi();
 
-		memory.store(varIndex, value);
+		memory.store(callStack.getVarAddress(varIndex), value);
 		return null;
 	}
 
@@ -73,7 +96,8 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 		Word value = stack.pop();
 		int varIndex = stack.popi();
 
-		memory.store(varIndex, value);
+		int varAddress = callStack.getVarAddress(varIndex);
+		memory.store(varAddress,value);
 		return null;
 	}
 
@@ -182,7 +206,8 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 			cpu.doIntUnaryOperation((a) -> a + 1);
 			Word value = stack.pop();
 			int varIndex = stack.popi();
-			memory.store(varIndex,value);
+			int varAddress = callStack.getVarAddress(varIndex);
+			memory.store(varAddress,value);
 		}
 		
 		return null;
@@ -197,7 +222,8 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 			cpu.doIntUnaryOperation((a) -> a - 1);
 			Word value = stack.pop();
 			int varIndex = stack.popi();
-			memory.store(varIndex,value);
+			int varAddress = callStack.getVarAddress(varIndex);
+			memory.store(varAddress,value);
 		}
 		
 		return null;
@@ -278,7 +304,8 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 
 		// ((ACHO)) que dá pra fazer isso diretamente sem checar o tipo
 		// pois ambos stack e memory usam word internamente
-		Word word = memory.get(varIndex);
+		int varAddress = callStack.getVarAddress(varIndex);
+		Word word = memory.get(varAddress);
 		stack.push(word);
 		
 		return null;
@@ -286,6 +313,12 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 
 	@Override
 	protected Void visitFuncCall(AST node) {
+		int funcIndex = node.intData;
+		callStack.push(funcIndex);
+
+		visitAllChildren(node);
+		visit(ft.get(funcIndex).declareNode.getChild(1)); // visits block
+		callStack.pop();
 		return null;
 	}
 

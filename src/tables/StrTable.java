@@ -6,7 +6,7 @@ import java.util.Formatter;
 @SuppressWarnings("serial")
 public final class StrTable extends ArrayList<String>{
     // @Override
-    public int addString(String s) {
+	public int addString(String s) {
 		for (int i = 0; i < this.size(); i++) {
 			if (this.get(i).equals(s)) {
 				return i;

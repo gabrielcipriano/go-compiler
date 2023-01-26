@@ -7,6 +7,8 @@ import typing.Type;
 public final class ScopeHandler {
   LinkedList<LinkedList<VarEntry>> scopes = new LinkedList<LinkedList<VarEntry>>();
 
+	public final int GLOBAL_SCOPE = 1;
+
   public int scopeDepth = 0;
 
   public ScopeHandler() {

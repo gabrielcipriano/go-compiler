@@ -10,6 +10,7 @@ options {
 
 program: 
 	package_clause eos (program_sect)* EOF;
+	// ((if_stmt | for_stmt) eos)* EOF;
 
 program_sect: (function_decl | const_decl | var_decl) eos;
 
@@ -69,6 +70,9 @@ index: L_BRACKETS expr R_BRACKETS;
 
 for_stmt: FOR (expr? | for_clause) block;
 
+for_clause:
+	init_stmt = simple_stmt? eos expr eos post_stmt = simple_stmt?;
+
 block: L_BRACES statement_list? R_BRACES;
 
 statement_list: (statement eos)+;
@@ -120,9 +124,6 @@ var_spec: identifier_list type (ASSIGN expr_list)?;
 // 	| L_PR  expr_list R_PR;
 // 	| expr
 
-for_clause:
-	init_stmt = simple_stmt? eos expr eos post_stmt = simple_stmt?;
-
 if_stmt:
 	IF 
 		( expr // if a := 1 { ... }
@@ -144,7 +145,7 @@ break_stmt: BREAK ID?;
 
 continue_stmt: CONTINUE ID?;
 
-inc_dec_stmt: expr (INCREMENT | DECREMENT);
+inc_dec_stmt: operand_name index? (INCREMENT | DECREMENT); // a = ++b
 
 return_stmt: RETURN expr_list?;
 

@@ -33,10 +33,9 @@ import ast.AST;
 import ast.NodeKind;
 
 public class SemanticChecker extends GOParserBaseVisitor<AST> {
-
 	public StrTable 			st = new StrTable();
 	public VarTable 		  vt = new VarTable();
-	private FunctionTable ft = new FunctionTable();
+	public FunctionTable ft = new FunctionTable();
 	private ScopeHandler 	sh = new ScopeHandler();
 
 	private AST root;
@@ -88,6 +87,9 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 		String varName = token.getText();
 		int line = token.getLine();
 		VarEntry entry = sh.lookupVar(varName);
+		if (entry.isConst())
+			PANIC("SEMANTIC ERROR (%d):  cannot re-assign a const variable.\n", line);
+
 		int idx = checkVar(entry, varName, line);
 		return new AST(NodeKind.VAR_ASSIGN_NODE , idx, entry.type);
 	}
@@ -97,7 +99,7 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 		String funcName = token.getText();
 		int line = token.getLine();
 
-		int idx = ft.lookupVar(funcName);
+		int idx = ft.lookupFunc(funcName);
 		if (idx == -1)
 			PANIC("SEMANTIC ERROR (%d): function '%s' was not declared.\n", line, funcName);
 		boolean hasReturn = ft.get(idx).returns.size() > 0 ;
@@ -133,17 +135,21 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 	private int newVar(Token token, Type type, boolean isConst) {
 		String varName = token.getText();
 		int line = token.getLine();
-		VarEntry entry = sh.lookupVar(varName);
-		if (entry != null)
-			PANIC("SEMANTIC ERROR (%d): variable '%s' already declared at line %d.\n", line, varName, entry.line);
-		if (ft.lookupVar(varName) != -1)
-			PANIC("SEMANTIC ERROR (%d): name '%s' already declared as function at line %d.\n", line, varName, entry.line);
+		VarEntry declaredEntry = sh.lookupVar(varName);
+		if (declaredEntry != null)
+			PANIC("SEMANTIC ERROR (%d): variable '%s' already declared at line %d.\n", line, varName, declaredEntry.line);
+		if (ft.lookupFunc(varName) != -1)
+			PANIC("SEMANTIC ERROR (%d): name '%s' already declared as function at line %d.\n", line, varName, declaredEntry.line);
 
 		if (isArray)
 			return newArray(varName, line, type, isConst);
 
-		VarEntry var = sh.addVar(varName, line, type, isConst);
-		return vt.addVar(var);
+		VarEntry entry = sh.addVar(varName, line, type, isConst);
+		int idx = vt.addVar(entry);
+
+		if (sh.scopeDepth != sh.GLOBAL_SCOPE)
+			entry.setFuncId(ft.getLastIdx());
+		return idx;
 	}
 
 	private int newFunc(Token token, List<Type> argList, List<Type> returnList ) {
@@ -154,18 +160,22 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 			PANIC("SEMANTIC ERROR (%d): variable '%s' already declared at line %d.\n", 
 					line, funcName, entry.line);
 
-		if (ft.lookupVar(funcName) != -1)
+		if (ft.lookupFunc(funcName) != -1)
 			PANIC("SEMANTIC ERROR (%d): function '%s' already declared at line %d.\n", 
-				line, funcName,ft.get(ft.lookupVar(funcName)).line);
+				line, funcName,ft.get(ft.lookupFunc(funcName)).line);
 
 		int idx = ft.addFunction(funcName, line, argList, returnList);
 		return idx;
 	}
 
 	private int newArray(String text, int line, Type type, boolean isConst) {
-		VarEntry var = sh.addVar(text, line, type, arraySz, isConst);
-		int idx = vt.addVar(var);
+		VarEntry entry = sh.addVar(text, line, type, arraySz, isConst);
 		isArray = false;
+		int idx = vt.addVar(entry);
+
+		if (sh.scopeDepth != sh.GLOBAL_SCOPE)
+			entry.setFuncId(ft.getLastIdx());
+
 		return idx;
 	}
 
@@ -204,18 +214,18 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 	public AST visitProgram(GOParser.ProgramContext ctx) {
 		sh.push();
 		this.root = AST.newSubtree(NodeKind.PROGRAM_NODE, NO_TYPE);
-		// visit(ctx.package_clause());
-		// for(var line : ctx.program_sect()){
-		// 	AST children = visit(line);
-		// 	if(children!= null){
-		// 		root.addChild(children);
-		// 	}
-		// }
-		for (var ifNode : ctx.children) {
-			AST children = visit(ifNode);
-			if(children != null)
+		visit(ctx.package_clause());
+		for(var line : ctx.program_sect()){
+			AST children = visit(line);
+			if(children!= null) {
 				root.addChild(children);
+			}
 		}
+		// for (var ifNode : ctx.children) {
+		// 	AST children = visit(ifNode);
+		// 	if(children != null)
+		// 		root.addChild(children);
+		// }
 		return root;
 	}
 
@@ -305,9 +315,6 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 			else
 				assignVar = varAssign(assignee.ID().getSymbol());
 			AST exprNode = exprList.remove(0);
-
-			if (vt.get(assignVar.intData).isConst())
-				diffTypeError(ctx.start.getLine(),  "const", ctx.expr_list().getText(), exprNode.type, assignVar.type);
 
 			if (assignVar.type == FLOAT32_TYPE && exprNode.type == INT_TYPE)
 				exprNode = AST.createConvNode(Conv.I2F, exprNode);
@@ -459,7 +466,7 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 		return AST.newSubtree(NodeKind.DECREMENT, NO_TYPE, varAssigned, varUsed);
 	}
 
-//region Types
+  // region Types
 
 	@Override
 	public AST visitFloatType(GOParser.FloatTypeContext ctx) {
@@ -472,7 +479,7 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 	}
 
 	@Override
-	public AST visitStringType(GOParser.StringTypeContext ctx) {
+	public AST visitStringType(GOParser.StringTypeContext ctx) { //TODO: WTF IS THIS DOING
 		//TODO tabela de String
 		return new AST(NodeKind.VAR_DECL_NODE,0,Type.STRING_TYPE);
 	}
@@ -533,7 +540,7 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 		AST blockNode = visit(ctx.block());
 
 		AST funcNode = AST.newSubtree(NodeKind.FUNC_DECL_NODE, NO_TYPE, idx, paramsNode, blockNode);
-		ft.get(idx).setFuncDeclare(funcNode);
+		ft.get(idx).setDeclareNode(funcNode);
 		sh.pop();
 		
 		return funcNode;

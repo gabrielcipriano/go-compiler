@@ -24,6 +24,10 @@ public class Memory extends Vector<Word> {
 		}
 	}
 
+	public void add(int value) {
+		this.add(Word.fromInt(0));
+	}
+
 	public void store(int addr, Word word) {
 		this.set(addr, word);
 	}

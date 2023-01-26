@@ -13,18 +13,17 @@ public final class FunctionTable {
 	// tentei deixar o mais parecido possível com a original em C.
 	private List<FunctionEntry> table = new ArrayList<FunctionEntry>();
 
-	public int lookupVar(String s) {
+	public int lookupFunc(String s) {
 		for (int i = 0; i < table.size(); i++) {
-			if (table.get(i).name.equals(s)) {
+			if (table.get(i).name.equals(s))
 				return i;
-			}
 		}
 		return -1;
 	}
 
 	public int addFunction(String name, int line, List<Type> params, List<Type> returns) {
-		FunctionEntry entry = new FunctionEntry(name, line, params, returns);
 		int idxAdded = table.size();
+		FunctionEntry entry = new FunctionEntry(name, line, params, returns, idxAdded);
 		table.add(entry);
 		return idxAdded;
 	}
@@ -34,7 +33,15 @@ public final class FunctionTable {
 	}
 
 	public FunctionEntry getLast() {
-		return table.get(table.size() -1);
+		return table.get(this.getLastIdx());
+	}
+
+	public int getSize() {
+		return table.size();
+	}
+
+	public int getLastIdx() {
+		return table.size() - 1;
 	}
 
 	public String toString() {

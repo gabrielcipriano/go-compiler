@@ -4,16 +4,8 @@ import java.util.ArrayList;
 import java.util.Formatter;
 import java.util.List;
 
-import typing.Type;
-
 public final class VarTable {
-
-	// No mundo real isto certamente deveria ser um hash...
-	// Implementação da classe não é exatamente Javanesca porque
-	// tentei deixar o mais parecido possível com a original em C.
 	private List<VarEntry> table = new ArrayList<VarEntry>();
-
-
 	/**
 	 * 
 	 * @deprecated Use lookupVar(String s, int scope) because we can have vars with same name
@@ -38,6 +30,7 @@ public final class VarTable {
 	}
 	public int addVar(VarEntry varEntry) {
 		int idxAdded = table.size();
+		varEntry.setIndex(idxAdded);
 		table.add(varEntry);
 		return idxAdded;
 	}
@@ -53,8 +46,8 @@ public final class VarTable {
 		for (int i = 0; i < table.size(); i++) {
 			VarEntry v = get(i);
 			String isArray = v.isArray() ? "[" + v.arraySz + "]" : "";
-			f.format("Entry %d -- name: %s, line: %d, scope: %d, type: %s%s\n", i,
-	                 v.name, v.line, v.scope, isArray, v.type.toString());
+			f.format("Entry %d -- name: %s, line: %d, scope: %d, type: %s%s\n", 
+								v.index, v.name, v.line, v.scope, isArray, v.type.toString());
 		}
 		f.close();
 		return sb.toString();

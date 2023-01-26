@@ -63,7 +63,7 @@ public class Main {
 
 		System.out.println("*** RUNNING ***\n");
 	
-		Interpreter interpreter = new Interpreter(checker.st, checker.vt);
+		Interpreter interpreter = new Interpreter(checker.st, checker.vt, checker.ft);
 		interpreter.execute(checker.getAST());
 	}
 }
