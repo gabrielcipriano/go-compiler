@@ -536,13 +536,13 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 		int idx = newFunc(ctx.ID().getSymbol(), resultTypes); 
 
 		AST paramsNode = visit(ctx.parameters());
+		ft.get(idx).setParams(paramsNode.getChildrenTypes());
 
 		// paramsNode.getChildrenTypes(), resultTypes
 		AST blockNode = visit(ctx.block());
 
 		AST funcNode = AST.newSubtree(NodeKind.FUNC_DECL_NODE, NO_TYPE, idx, paramsNode, blockNode);
 		ft.get(idx).setDeclareNode(funcNode);
-		ft.get(idx).setParams(paramsNode.getChildrenTypes());
 		sh.pop();
 		
 		return funcNode;

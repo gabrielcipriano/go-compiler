@@ -2,18 +2,25 @@ package main
 
 import "fmt"
 
-var counter int = 0
+func fibonacci(a int, b int, limit int) int {
+	next := a + b
+	fmt.Println(a)
 
-func somaUmPrint(a int) {
-	newA := a + 1
-	fmt.Println("valor: ", newA)
+	if next <= limit {
+		return fibonacci(b, next, limit)
+	} else {
+		fmt.Println(b)
+		return b
+	}
+}
+
+func fibonacciSequence(limit int) int {
+	fmt.Println("Fibonacci sequence:")
+	return fibonacci(0, 1, limit)
 }
 
 func main() {
-	for i := 0; i < 10; i++ {
-		somaUmPrint(i)
-		counter++
-	}
+	lastFibonacci := fibonacciSequence(30)
 
-	fmt.Println("novo valor de counter:", counter)
+	fmt.Println("Last fibonacci before limit:", lastFibonacci)
 }
