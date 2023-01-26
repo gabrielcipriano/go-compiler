@@ -7,5 +7,5 @@ package main
 
 // sum 2 numbers
 func main() {
-	return "Hello World"
+	str := "Hello World"
 }

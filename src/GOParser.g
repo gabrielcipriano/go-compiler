@@ -9,17 +9,19 @@ options {
 }
 
 program: 
-	package_clause eos (
-		(function_decl | const_decl | var_decl) eos
-	)* EOF;
+	package_clause eos (program_sect)* EOF;
+	// ((if_stmt | for_stmt) eos)* EOF;
+
+program_sect: (function_decl | const_decl | var_decl) eos;
+
 
 package_clause: PACKAGE packageName = ID;
 
 assignment:
-  assignee_list assign_op expr_list;
+	assignee_list assign_op expr_list;
 
 assignee_list:
-	 assignee (COMMA assignee)*;
+	assignee (COMMA assignee)*;
 
 assignee:
 	ID index?;
@@ -37,13 +39,13 @@ identifier_list :
 ;
 
 expr_list:
-  expr (COMMA expr)*;
+	expr (COMMA expr)*;
 
 expr: 
-  operand (index	| arguments)?						# operandExpr
+  operand (index	| arguments)?			# operandExpr
 | unary_op = (PLUS | MINUS | NOT) expr 		# unary
-| expr mul_op = (STAR | DIV) expr					# multDiv
-| expr add_op = (PLUS | MINUS) expr				# plusMinus
+| expr mul_op = (STAR | DIV) expr			# multDiv
+| expr add_op = (PLUS | MINUS) expr			# plusMinus
 | expr rel_op = (
     EQ_EQ 
   | NOT_EQ
@@ -51,9 +53,9 @@ expr:
   | LESS_EQ
   | GREATER
   | GREATER_EQ
-) expr 																		# relation
-| expr AND_AND expr												# and
-| expr OR expr														# or
+) expr 										# relation
+| expr AND_AND expr							# and
+| expr OR expr								# or
 ;
 
 // primary_expr:
@@ -67,6 +69,9 @@ expr:
 index: L_BRACKETS expr R_BRACKETS;
 
 for_stmt: FOR (expr? | for_clause) block;
+
+for_clause:
+	init_stmt = simple_stmt? eos expr eos post_stmt = simple_stmt?;
 
 block: L_BRACES statement_list? R_BRACES;
 
@@ -91,7 +96,7 @@ function_call:
 print:
 	PRINT L_PR expr_list R_PR;
 
-function_decl: FUNC ID parameters result? block?;
+function_decl: FUNC ID parameters result? block; // block obrigatorio na nossa implementacao
 
 parameters:
 	L_PR (parameterDecl (COMMA parameterDecl)*)? R_PR;
@@ -119,14 +124,11 @@ var_spec: identifier_list type (ASSIGN expr_list)?;
 // 	| L_PR  expr_list R_PR;
 // 	| expr
 
-for_clause:
-	init_stmt = simple_stmt? eos expr eos post_stmt = simple_stmt?;
-
 if_stmt:
 	IF 
-		( expr
-				| eos expr
-				| simple_stmt eos expr
+		( expr // if a := 1 { ... }
+				| eos expr // if ; a == 1 { ... }
+				| simple_stmt eos expr // if a := 1; a == 1 { ... }
 		) 
 	block 
 	(
@@ -143,7 +145,7 @@ break_stmt: BREAK ID?;
 
 continue_stmt: CONTINUE ID?;
 
-inc_dec_stmt: expr (INCREMENT | DECREMENT);
+inc_dec_stmt: operand_name index? (INCREMENT | DECREMENT); // a = ++b
 
 return_stmt: RETURN expr_list?;
 
@@ -160,14 +162,14 @@ operand_name:
 	ID;
 
 literal:
-basic = (
-  NIL_LIT
-| INT_LIT
-| STR_LIT
-| FLOAT_LIT
-| TRUE_LIT
-| FALSE_LIT
-)															# basicLiteral
+//basic = (
+  NIL_LIT					#nilVal
+| INT_LIT					#intVal
+| STR_LIT					#strVal
+| FLOAT_LIT					#floatVal
+| TRUE_LIT					#trueVal
+| FALSE_LIT					#falseVal
+//)															# basicLiteral
 | array_type literal_array    # arrayLiteral
 ;
 
@@ -199,7 +201,6 @@ type:
   | STRING 					# stringType
   | BOOLEAN 				# boolType
   | array_type 			# arrayType
-  | L_PR type R_PR	# brackets
   ;
 
 eos:

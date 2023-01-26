@@ -11,9 +11,13 @@ public enum NodeKind {
     BOOL_LIT_NODE,
     INT_LIT_NODE,
     STR_LIT_NODE,
+    NIL_LIT_NODE,
     VAR_DECL_NODE,
-    VAR_LIST_NODE,
+    SHORT_VAR_DECL_NODE,
+    ASSIGN_LIST_NODE,
+    VAR_DECL_LIST_NODE,
     VAR_USE_NODE,
+    VAR_ASSIGN_NODE,
     ASSIGN_NODE,
     BLOCK_NODE,
     IF_NODE,
@@ -24,11 +28,13 @@ public enum NodeKind {
     PROGRAM_NODE,
     READ_NODE,
     FOR_NODE,
+    DIV_NODE,
     TIMES_NODE,
-    WRITE_NODE,
     // Type conversion nodes
     I2F_NODE,
     
+    FOR_CLAUSE_NODE,
+    IF_CLAUSE_NODE,
     AND_NODE,
     OR_NODE,
     PRINT_NODE,
@@ -39,11 +45,21 @@ public enum NodeKind {
     GREATER_NODE,
     GREATER_EQ_NODE,
     NOT_NODE,
-    INCREMENT;
+    FUNC_CALL_NODE,
+    FUNC_DECL_NODE,
+    EQ_PLUS_NODE,
+    EQ_MINUS_NODE,
+    EQ_TIMES_NODE,
+    EQ_DIV_NODE,
+    INCREMENT,
+    DECREMENT,
+    RETURN_NODE;
+
 
 	public String toString() {
 		switch(this) {
             case ASSIGN_NODE:       return "=";
+            case SHORT_VAR_DECL_NODE:return ":=";
             case EQ_NODE:           return "==";
             case BLOCK_NODE:        return "block";
             case BOOL_LIT_NODE:     return "";
@@ -59,10 +75,11 @@ public enum NodeKind {
             case FOR_NODE:          return "for";
             case STR_LIT_NODE:      return "";
             case TIMES_NODE:        return "*";
+            case DIV_NODE:          return "/";
             case VAR_DECL_NODE:     return "var_decl";
-            case VAR_LIST_NODE:     return "var_list";
+            case ASSIGN_LIST_NODE:  return "assign_list";
+            case VAR_DECL_LIST_NODE:return "decl_list";
             case VAR_USE_NODE:      return "var_use";
-            case WRITE_NODE:        return "write";
             case I2F_NODE:          return "I2F";
             case AND_NODE:          return "&&";
             case PRINT_NODE:        return "print" ;
@@ -73,6 +90,18 @@ public enum NodeKind {
             case GREATER_NODE:      return ">";
             case NOT_NODE:          return "!";
             case INCREMENT:         return "++";
+            case DECREMENT:         return "--";
+            case FOR_CLAUSE_NODE:   return "for_clause";
+            case IF_CLAUSE_NODE:    return "if_clause";
+            case ELSE_NODE:         return "else";
+            case NIL_LIT_NODE:      return "nil";
+            case FUNC_CALL_NODE:    return "function";
+            case EQ_PLUS_NODE:      return "+=";
+            case EQ_MINUS_NODE:     return "-=";
+            case EQ_TIMES_NODE:     return "*=";
+            case EQ_DIV_NODE:       return "/=";
+            case FUNC_DECL_NODE:    return "func_decl";
+            case RETURN_NODE:       return "return";
 			default:
 				System.err.println("ERROR: Fall through in NodeKind enumeration!");
 				System.exit(1);
@@ -88,6 +117,8 @@ public enum NodeKind {
 	        case STR_LIT_NODE:
 	        case VAR_DECL_NODE:
 	        case VAR_USE_NODE:
+            case NIL_LIT_NODE:
+            case FUNC_CALL_NODE:
 	            return true;
 	        default:
 	            return false;

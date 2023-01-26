@@ -64,6 +64,10 @@ Teste OK:
 - [ ] Verificar teste_BAD 18 (Comparação de tipos de retorno d função)
 - [ ] Usar array como variável simples
 
+## CP 5
+
+Faltando o break e o continue
+
 ## Dicas
 
 Quando formos ler uma função, pegamos tudo como id e depois lidamos com ela. Utilizando uma tabela de símbolos

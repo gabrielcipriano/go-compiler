@@ -1,8 +1,8 @@
 package checker;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.LinkedList;
-import java.util.Map;
+import java.util.List;
 
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -11,9 +11,10 @@ import parser.GOParser;
 import parser.GOParser.AssigneeContext;
 import parser.GOParser.ExprContext;
 import parser.GOParser.ParameterDeclContext;
-import parser.GOParser.StatementContext;
 import parser.GOParser.TypeContext;
 import parser.GOParserBaseVisitor;
+import tables.FunctionEntry;
+import tables.FunctionTable;
 import tables.ScopeHandler;
 import tables.StrTable;
 import tables.VarEntry;
@@ -26,119 +27,156 @@ import static typing.Type.STRING_TYPE;
 import static typing.Type.NIL_TYPE;
 import static typing.Type.NO_TYPE;
 
-import typing.SpecialType;
+import typing.Conv;
 
 import ast.AST;
 import ast.NodeKind;
 
 public class SemanticChecker extends GOParserBaseVisitor<AST> {
+	public StrTable 			st = new StrTable();
+	public VarTable 		  vt = new VarTable();
+	public FunctionTable ft = new FunctionTable();
+	private ScopeHandler 	sh = new ScopeHandler();
 
-	private StrTable st = new StrTable(); // Tabela de strings.
-	private VarTable vt = new VarTable(); // Tabela de variáveis.
-	private ScopeHandler sh = new ScopeHandler();
+	private AST root;
 
-	private AST ast;
-
-	private LinkedList<Type> exprTypesQueue = new LinkedList<Type>();
-
-	private Type lastDeclType; // Variável "global" com o último tipo declarado.
-	private boolean infer = false;
 	private boolean isArray = false;
-	private boolean isFunction = false;
+	private int arraySz = -1;
 
-	private static Map<Integer, Type> basicLitTypeMap = Map.of(
-		GOParser.NIL_LIT, NIL_TYPE,
-		GOParser.INT_LIT, INT_TYPE,
-		GOParser.STR_LIT, STRING_TYPE,
-		GOParser.FLOAT_LIT, FLOAT32_TYPE,
-		GOParser.TRUE_LIT, BOOLEAN_TYPE,
-		GOParser.FALSE_LIT, BOOLEAN_TYPE
-	);
-	private String text; // TODO: ma pq?
+	// Exibe a AST no formato DOT em stderr.
+	public void printAST() {
+		AST.printDot(root, vt, ft);
+	}
+
+	private void PANIC(String format, Object ... args) {
+		System.err.printf(format, args);
+		System.exit(1);
+	}
+
+	// create fmt.Println visit terminal
+	@Override
+	public AST visitPrint(GOParser.PrintContext node) {
+		AST print = AST.newSubtree(NodeKind.PRINT_NODE, NO_TYPE);
+		print.addChildren(getExprNodes(node.expr_list()));
+		return print;
+	}
 
 	// Testa se o dado token foi declarado antes.
-	private AST checkVar(Token token) {
+	private int checkVar(VarEntry entry, String varName,int line) {
+		if (entry == null)
+			PANIC("SEMANTIC ERROR (%d): variable was not declared.\n", line, varName);
+		if (isArray && !entry.isArray())
+			PANIC("SEMANTIC ERROR (%d): variable '%s' is not an array.\n", line, varName);
+		if (!isArray && entry.isArray())
+			PANIC("SEMANTIC ERROR (%d): variable '%s' is an array.\n", line, varName);
+		int idx = vt.lookupVar(entry.name, entry.scope);
+		return idx;
+	}
+
+	// retorna um VarUse
+	private AST varUse(Token token) {
 		String varName = token.getText();
 		int line = token.getLine();
 		VarEntry entry = sh.lookupVar(varName);
-		if (entry == null) {
-			System.err.printf("SEMANTIC ERROR (%d): variable '%s' was not declared.\n", line, varName);
-			System.exit(1);
-		}
-		if (isArray && entry.special != SpecialType.ARRAY) {
-			System.err.printf("SEMANTIC ERROR (%d): variable '%s' is not an array.\n", line, varName);
-			System.exit(1);
-		}
-		if (isFunction) {
-			if (entry.special != SpecialType.FUNCTION) {
-				System.err.printf("SEMANTIC ERROR (%d): variable '%s' is not a function.\n", line, varName);
-				System.exit(1);
-			}
-			return entry.funcReturn.size() > 0 ? entry.funcReturn.get(0): Type.NIL_TYPE;
-		}
-		//TODO 
-		return new AST(NodeKind.VAR_USE_NODE,0 ,entry.type) ;
+		int idx = checkVar(entry, varName, line);
+		return new AST(NodeKind.VAR_USE_NODE , idx, entry.type);
 	}
 
-	private void checkFuncArguments(VarEntry func, GOParser.ArgumentsContext ctx) {
-		LinkedList<Type> argumentsTypes = getExprTypes(ctx.expr_list());
+	// retorna um VarAssign
+	private AST varAssign(Token token) {
+		String varName = token.getText();
+		int line = token.getLine();
+		VarEntry entry = sh.lookupVar(varName);
+		if (entry.isConst())
+			PANIC("SEMANTIC ERROR (%d):  cannot re-assign a const variable.\n", line);
 
-		if(func.funcParams.size() != argumentsTypes.size()){
-			String expectedParams = Type.listToString(func.funcParams); 
-			String givenParams = Type.listToString(argumentsTypes); 
-			String qtt = func.funcParams.size() > argumentsTypes.size() ? "not enough" : "too many";
+		int idx = checkVar(entry, varName, line);
+		return new AST(NodeKind.VAR_ASSIGN_NODE , idx, entry.type);
+	}
+
+	// Testa se o dado token foi declarado antes.
+	private AST checkFuncCall(Token token) {
+		String funcName = token.getText();
+		int line = token.getLine();
+
+		int idx = ft.lookupFunc(funcName);
+		if (idx == -1)
+			PANIC("SEMANTIC ERROR (%d): function '%s' was not declared.\n", line, funcName);
+		boolean hasReturn = ft.get(idx).returns.size() > 0 ;
+		return new AST(NodeKind.FUNC_CALL_NODE, idx, hasReturn ? ft.get(idx).returns.get(0) : NO_TYPE); // considerando atualmente um unico retorno
+	}
+
+	private List<AST> checkFuncArguments(FunctionEntry func, GOParser.ArgumentsContext ctx) {
+		List<AST> exprNodes = getExprNodes(ctx.expr_list());
+
+		if(func.params.size() != exprNodes.size()){
+			String expectedParams = Type.listToString(func.params); 
+			String givenParams = AST.typesToString(exprNodes);
+			String qtt = func.params.size() > exprNodes.size() ? "not enough" : "too many";
 				
-			System.err.printf("SEMANTIC ERROR (%d): %s arguments in call to %s\n \t have (%s)\n\t want (%s)\n",
+			PANIC("SEMANTIC ERROR (%d): %s arguments in call to %s\n \t have (%s)\n\t want (%s)\n",
 				ctx.start.getLine(),qtt,func.name,expectedParams,givenParams);
-			System.exit(1);
 		}
-		for (Type paramType : func.funcParams) {
-			Type atype = argumentsTypes.removeFirst();
-			if (paramType == atype || (paramType == FLOAT32_TYPE && atype == INT_TYPE))
+
+		for (int i = 0; i < exprNodes.size(); i++) {
+			var argNode = exprNodes.get(i);
+			if(argNode.type == INT_TYPE && func.params.get(i) == FLOAT32_TYPE) {
+				exprNodes.remove(i);
+				exprNodes.add(i, AST.createConvNode(Conv.I2F, argNode));
 				continue;
-			diffTypeError(ctx.start.getLine(),"argument to function", ctx.getText(), atype, paramType);
+			}
+			if(argNode.type != func.params.get(i))
+				diffTypeError(ctx.start.getLine(),"argument to function", ctx.getText(), argNode.type, func.params.get(i));
 		}
+		return exprNodes;
 	}
 
 	// Cria uma nova variável a partir do dado token.
-	private void newVar(Token token, Type type) {
+	private int newVar(Token token, Type type, boolean isConst) {
 		String varName = token.getText();
 		int line = token.getLine();
-		VarEntry entry = sh.lookupVar(varName);
-		if (entry != null) {
-			System.err.printf("SEMANTIC ERROR (%d): variable '%s' already declared at line %d.\n", 
-					line, varName, entry.line);
-			System.exit(1);
-		}
-		if (isArray) {
-			newArray(varName, line, type);
-		} /*else if (isFunction) {
-			newFunc(varName, line, type);
-		} */else {
-			vt.addVar(varName, line, sh.scopeDepth, type);
-			sh.addVar(varName, line, type);
-		}
+		VarEntry declaredEntry = sh.lookupVar(varName);
+		if (declaredEntry != null)
+			PANIC("SEMANTIC ERROR (%d): variable '%s' already declared at line %d.\n", line, varName, declaredEntry.line);
+		if (ft.lookupFunc(varName) != -1)
+			PANIC("SEMANTIC ERROR (%d): name '%s' already declared as function at line %d.\n", line, varName, declaredEntry.line);
+
+		if (isArray)
+			return newArray(varName, line, type, isConst);
+
+		VarEntry entry = sh.addVar(varName, line, type, isConst);
+		int idx = vt.addVar(entry);
+
+		if (sh.scopeDepth != sh.GLOBAL_SCOPE)
+			entry.setFuncId(ft.getLastIdx());
+		return idx;
 	}
 
-	private void newFunc(Token token, LinkedList<Type> argList, LinkedList<Type> returnList ) {
-		String varName = token.getText();
+	private int newFunc(Token token, List<Type> returnList ) {
+		String funcName = token.getText();
 		int line = token.getLine();
-		VarEntry entry = sh.lookupVar(varName);
-		if (entry != null) {
-			System.err.printf("SEMANTIC ERROR (%d): variable '%s' already declared at line %d.\n", 
-					line, varName, entry.line);
-			System.exit(1);
-		}
-		
-		vt.addVar(varName, line, sh.scopeDepth, !returnList.isEmpty()? returnList.getFirst():Type.NIL_TYPE, SpecialType.FUNCTION);
-		sh.addVar(varName, line, SpecialType.FUNCTION,argList,returnList);
-		isFunction = false;
+		VarEntry entry = sh.lookupVar(funcName);
+		if (entry != null)
+			PANIC("SEMANTIC ERROR (%d): variable '%s' already declared at line %d.\n", 
+					line, funcName, entry.line);
+
+		if (ft.lookupFunc(funcName) != -1)
+			PANIC("SEMANTIC ERROR (%d): function '%s' already declared at line %d.\n", 
+				line, funcName,ft.get(ft.lookupFunc(funcName)).line);
+
+		int idx = ft.addFunction(funcName, line, returnList);
+		return idx;
 	}
 
-	private void newArray(String text, int line, Type type) {
-		vt.addVar(text, line, sh.scopeDepth, type, SpecialType.ARRAY);
-		sh.addVar(text, line, type, SpecialType.ARRAY);
+	private int newArray(String text, int line, Type type, boolean isConst) {
+		VarEntry entry = sh.addVar(text, line, type, arraySz, isConst);
 		isArray = false;
+		int idx = vt.addVar(entry);
+
+		if (sh.scopeDepth != sh.GLOBAL_SCOPE)
+			entry.setFuncId(ft.getLastIdx());
+
+		return idx;
 	}
 
 	// Exibe o conteúdo das tabelas em stdout.
@@ -148,338 +186,512 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 		System.out.print("\n\n");
 		System.out.print(vt);
 		System.out.print("\n\n");
+		System.out.print(ft);
+		System.out.print("\n\n");
 	}
 
 	private void mismatchedOperationError(int line, String expr, Type typeA, Type typeB) {
-		System.err.printf(
-			"SEMANTIC ERROR [Invalid operation] (%d):  %s (mismatched types %s and %s for operation.).\n", 
-			line, expr, typeA.toString(), typeB.toString()
-		);
-		System.exit(1);
+		PANIC("SEMANTIC ERROR [Invalid operation] (%d):  %s (mismatched types %s and %s for operation.).\n", 
+			line, expr, typeA.toString(), typeB.toString());
 	}
 
 	private void operatorNotDefinedError(int line, String expr, String operator, Type type) {
-		System.err.printf(
-			"SEMANTIC ERROR [Invalid operation] (%d): operator %s not defined on %s (%s).\n", 
-			line, operator, expr, type.toString()
-		);
-		System.exit(1);
+		PANIC("SEMANTIC ERROR [Invalid operation] (%d): operator %s not defined on %s (%s).\n", 
+			line, operator, expr, type.toString());
 	}
 
 	private void assignmentMismatchError(int line, String txt, int vars, int vals) {
-		System.err.printf(
-			"SEMANTIC ERROR [assignment mismatch] (%d):  %s (%d variables but %d value).\n", 
+		PANIC("SEMANTIC ERROR [assignment mismatch] (%d):  %s (%d variables but %d value).\n", 
 			line, txt, vars, vals);
-		System.exit(1);
 	}
 
 	private void diffTypeError(int line,  String where, String txtVal, Type givenType, Type expectedType) {
-		System.err.printf(
-			"SEMANTIC ERROR (%d):  cannot use %s (%s) as %s value in %s.\n", 
+		PANIC("SEMANTIC ERROR (%d):  cannot use %s (%s) as %s value in %s.\n", 
 			line, txtVal, givenType.getName(), expectedType.getName(), where);
-		System.exit(1);
 	};
 
 	@Override
 	public AST visitProgram(GOParser.ProgramContext ctx) {
 		sh.push();
-		return visitChildren(ctx);
+		this.root = AST.newSubtree(NodeKind.PROGRAM_NODE, NO_TYPE);
+		visit(ctx.package_clause());
+		for(var line : ctx.program_sect()){
+			AST children = visit(line);
+			if(children!= null) {
+				root.addChild(children);
+			}
+		}
+		// for (var ifNode : ctx.children) {
+		// 	AST children = visit(ifNode);
+		// 	if(children != null)
+		// 		root.addChild(children);
+		// }
+		return root;
 	}
 
+	public AST getAST() {
+		return this.root;
+	}
 
 	@Override
-	public AST visitAssignee(GOParser.AssigneeContext ctx) {
-		return checkVar(ctx.ID().getSymbol());
+	public AST visitProgram_sect(GOParser.Program_sectContext ctx){
+		if(ctx.var_decl() != null) return visit(ctx.var_decl());
+		if(ctx.const_decl() != null) return visit(ctx.const_decl());
+		return visit(ctx.function_decl());
 	}
 
-	private LinkedList<Type> getExprTypes(GOParser.Expr_listContext ctx) {
-		LinkedList<Type> exprTypes = new LinkedList<Type>();
-		if(ctx == null) return exprTypes;
+	@Override
+	public AST visitBlock(GOParser.BlockContext ctx){
+		AST block = AST.newSubtree(NodeKind.BLOCK_NODE, NO_TYPE);
+		if (ctx.statement_list() != null)
+			for(var line : ctx.statement_list().statement()){
+				AST child = visit(line);
+				if(child != null)
+					block.addChild(child);
+			}
+		return block;
+	}
+
+
+	// @Override
+	// public AST visitAssignee(GOParser.AssigneeContext ctx) {
+	// 	if(ctx.index() != null){
+	// 		AST index = visit(ctx.index());
+	// 		AST assignee = AST.newSubtree(NodeKind.ASSIGNEE_NODE, NO_TYPE);
+	// 		assignee.addChild(visit(ctx.ID()));
+	// 		assignee.addChild(index);
+	// 		return assignee;
+	// 	}
+
+	// 	return checkVar(ctx.ID().getSymbol());
+	// }
+
+	private List<AST> getExprNodes(GOParser.Expr_listContext ctx) {
+		List<AST> exprNodes = new LinkedList<AST>();
+		if(ctx == null) return exprNodes;
 		for (ExprContext exprCtx : ctx.expr())
-			exprTypes.add(visit(exprCtx));
-		return exprTypes;
+			exprNodes.add(visit(exprCtx));
+		return exprNodes;
 	}
-
-	// TODO: verificar se os tipos das expressões estão batendo com os tipos dos identificadores
-
+	
 	@Override
-	public Type visitAssignment(GOParser.AssignmentContext ctx) {
-		LinkedList<Type> exprTypes = getExprTypes(ctx.expr_list());
+	public AST visitAssignment(GOParser.AssignmentContext ctx) {
+		List<AST> exprList = getExprNodes(ctx.expr_list());
 
-		int exprSz = exprTypes.size();
+		int exprSz = exprList.size();
 		int valsSz = ctx.assignee_list().assignee().size();
-
+		
 		if(exprSz != valsSz)
 			assignmentMismatchError(ctx.start.getLine(), ctx.getText(), exprSz, valsSz);
-		
+		AST varListNode = AST.newSubtree(NodeKind.ASSIGN_LIST_NODE, NO_TYPE);
 		for (AssigneeContext assignee : ctx.assignee_list().assignee()) {
-			if (assignee.index() != null)
-				isArray = true;
-			Type assignType = checkVar(assignee.ID().getSymbol());
-			Type exprType = exprTypes.removeFirst();
+			NodeKind nodeType = NodeKind.ASSIGN_NODE;
 
-			if (assignType == exprType || (assignType == FLOAT32_TYPE && exprType == INT_TYPE))
-				continue;
+			if (ctx.assign_op().op != null) {
+				switch (ctx.assign_op().op.getType()) {
+					case GOParser.PLUS:
+						nodeType = NodeKind.EQ_PLUS_NODE;
+						break;
+					case GOParser.MINUS:
+						nodeType = NodeKind.EQ_MINUS_NODE;
+						break;
+					case GOParser.STAR:
+						nodeType = NodeKind.EQ_TIMES_NODE;
+						break;
+					default:
+						nodeType = NodeKind.EQ_DIV_NODE;
+						break;
+				}
+			}
 			
-			diffTypeError(ctx.start.getLine(),"variable assignment", ctx.expr_list().getText(), exprType, assignType);
+			AST assignment = AST.newSubtree(nodeType, NO_TYPE);
+			AST assignVar;
+			if (assignee.index() != null){
+				isArray = true;
+				assignVar = varAssign(assignee.ID().getSymbol());
+				isArray = false;
+				assignVar.addChild(visit(assignee.index().expr()));
+			}
+			else
+				assignVar = varAssign(assignee.ID().getSymbol());
+			AST exprNode = exprList.remove(0);
+
+			if (assignVar.type == FLOAT32_TYPE && exprNode.type == INT_TYPE)
+				exprNode = AST.createConvNode(Conv.I2F, exprNode);
+
+			if (assignVar.type != exprNode.type)
+				diffTypeError(ctx.start.getLine(),"variable assignment", ctx.expr_list().getText(), exprNode.type, assignVar.type);
+
+			assignment.addChild(assignVar);
+			assignment.addChild(exprNode);
+			varListNode.addChild(assignment);
 		}
 
-		return visitChildren(ctx);
+		return varListNode;
+	}
+
+	// @Override
+	// public AST visitVar_decl(GOParser.Var_declContext ctx){
+	// 	AST children = visit(ctx.var_spec());
+	// 	return children;
+	// }
+
+	@Override
+	public AST visitSimple_stmt(GOParser.Simple_stmtContext ctx) {
+		if(ctx.inc_dec_stmt() 	!= null) 	return visit(ctx.inc_dec_stmt());
+		if(ctx.assignment() 	!= null) 	return visit(ctx.assignment());
+		if(ctx.funccall_stmt() 	!= null)	return visit(ctx.funccall_stmt());
+		return visit(ctx.shortVar_decl());
 	}
 
 	@Override
-	public Type visitParameterDecl(GOParser.ParameterDeclContext ctx) {
-		// infer = false;
-		newVar(ctx.ID().getSymbol(), visit(ctx.type()));
-		// this.lastDeclType = visit(ctx.type());
-		// visit(ctx.identifier_list());
-		return null;
-	}
-
-
-	@Override
-	public Type visitVar_spec(GOParser.Var_specContext ctx) { // var a, b int = 1, 2 || var c, d string
-		Type type = visit(ctx.type());
+	public AST visitReturn_stmt(GOParser.Return_stmtContext ctx) {
+		var currFunc = ft.getLast();
+		var exprList = getExprNodes(ctx.expr_list());
+		if (currFunc.returns.size() != exprList.size())
+			PANIC("SEMANTIC ERROR (%d):  cannot use (%s) as (%s) value in return statement.\n",
+				ctx.start.getLine(), AST.typesToString(exprList), Type.listToString(currFunc.returns));
 		
-		LinkedList<Type> exprTypes = ctx.expr_list() != null ? getExprTypes(ctx.expr_list()) : null;
+		for (int i = 0; i < exprList.size(); i++)
+			if (exprList.get(i).type != currFunc.returns.get(i))
+				PANIC("SEMANTIC ERROR (%d):  cannot use (%s) as (%s) value in return statement.\n",
+					ctx.start.getLine(), AST.typesToString(exprList), Type.listToString(currFunc.returns));
+		var returnNode = new AST(NodeKind.RETURN_NODE, 0, NO_TYPE);
+		returnNode.addChildren(exprList);
+		return returnNode;
+	}
 
-		if (exprTypes != null) {
-			int exprSz = exprTypes.size();
+	@Override
+	public AST visitVar_spec(GOParser.Var_specContext ctx) { // var a, b int = 1, 2 || var c, d string
+		AST typeNode = visit(ctx.type());
+		AST varListNode = AST.newSubtree(NodeKind.VAR_DECL_LIST_NODE, NO_TYPE);
+		List<AST> exprNodes = ctx.expr_list() != null ? getExprNodes(ctx.expr_list()) : null;
+
+		if (exprNodes != null) {
+			int exprSz = exprNodes.size();
 			int valsSz = ctx.identifier_list().ID().size();
 			if(exprSz != valsSz)
 				assignmentMismatchError(ctx.start.getLine(), ctx.getText(), exprSz, valsSz);
 			
-			for (Type t : exprTypes)
-				if (t != type)
-					diffTypeError(ctx.start.getLine(), "variable declaration", ctx.expr_list().getText(), t, type);
+			for (int i = 0; i < exprNodes.size(); i++) {
+				var expr = exprNodes.get(i);
+				if (typeNode.type == Type.FLOAT32_TYPE && expr.type == Type.INT_TYPE) {
+					exprNodes.remove(i);
+					exprNodes.add(i, AST.createConvNode(Conv.I2F, expr));
+					continue;
+				}
+
+				if (expr.type != typeNode.type)
+					diffTypeError(ctx.start.getLine(), "variable declaration", ctx.expr_list().getText(), expr.type, typeNode.type);
+			}
 		}
 
-		
-		// // TODO: atribuindo as variaveis ao(s) retorno(s) de uma função
-		// if (ctx.parameters() != null) { // cannot use sum(1, 2) (value of type int) as type string in assignment
-		// 	VarEntry func = sh.lookupVar(ctx.funcOrExprList().operand_name().ID().getText());
-		// 	for (Type returnType : func.funcReturn)
-		// 		if(returnType != type)
-		// 			diffTypeError(ctx.start.getLine(), "assignment", ctx.funcOrExprList().operand_name().ID().getText() + ctx.funcOrExprList().parameters().getText(), returnType, type);
-		// }
-
-		for (TerminalNode id : ctx.identifier_list().ID())
-			newVar(id.getSymbol(), type);
-
-		return null;
+		// Declaração de variáveis sem atribuição
+		if(exprNodes == null)
+			for (TerminalNode id : ctx.identifier_list().ID()){
+				int idx = newVar(id.getSymbol(), typeNode.type, false);
+				varListNode.addChild(new AST(NodeKind.VAR_DECL_NODE,idx,typeNode.type));
+			}
+		// Com atribuição
+		else 
+			for (TerminalNode id : ctx.identifier_list().ID()){
+				int idx = newVar(id.getSymbol(), typeNode.type, false);
+				AST varDeclNode = new AST(NodeKind.VAR_ASSIGN_NODE,idx,typeNode.type);
+				AST assingNode = AST.newSubtree(NodeKind.SHORT_VAR_DECL_NODE, NO_TYPE,varDeclNode,exprNodes.remove(0));
+				varListNode.addChild(assingNode);
+			}
+		return varListNode;
 	}
 
 	@Override
-	public Type visitConst_spec(GOParser.Const_specContext ctx) {
-		Type type = visit(ctx.type());
-		
-		LinkedList<Type> exprTypes = ctx.expr_list() != null ? getExprTypes(ctx.expr_list()) : null;
+	public AST visitConst_spec(GOParser.Const_specContext ctx) {
+		Type type = visit(ctx.type()).type;
+		AST varListNode = AST.newSubtree(NodeKind.VAR_DECL_LIST_NODE, NO_TYPE);
+		List<AST> exprNodes = getExprNodes(ctx.expr_list());
 
-		int exprSz = exprTypes.size();
-		int valsSz = ctx.identifier_list().ID().size();
+		int exprSize = exprNodes.size();
+		int valuesSize = ctx.identifier_list().ID().size();
 
-		if(exprSz != valsSz)
-			assignmentMismatchError(ctx.start.getLine(), ctx.getText(), exprSz, valsSz);
+		if(exprSize != valuesSize)
+			assignmentMismatchError(ctx.start.getLine(), ctx.getText(), exprSize, valuesSize);
 
-		for (Type t : exprTypes)
-			if (t != type)
-				diffTypeError(ctx.start.getLine(), "variable declaration", ctx.expr_list().getText(), t, type);
-		
-		for (TerminalNode id : ctx.identifier_list().ID())
-			newVar(id.getSymbol(), type);
+		for (int i = 0; i < exprNodes.size(); i++) {
+			var expr = exprNodes.get(i);
+			if (type == Type.FLOAT32_TYPE && expr.type == Type.INT_TYPE) {
+				exprNodes.remove(i);
+				exprNodes.add(i, AST.createConvNode(Conv.I2F, expr));
+				continue;
+			}
 
-		return null;
+			if (expr.type != type)
+				diffTypeError(ctx.start.getLine(), "variable declaration", ctx.expr_list().getText(), expr.type, type);
+		}
+
+		for (TerminalNode id : ctx.identifier_list().ID()){
+			int idx = newVar(id.getSymbol(), type, true);
+			AST varDeclNode = new AST(NodeKind.VAR_ASSIGN_NODE, idx, type);
+			AST assingNode = AST.newSubtree(NodeKind.SHORT_VAR_DECL_NODE, NO_TYPE,varDeclNode,exprNodes.remove(0));
+			varListNode.addChild(assingNode);
+		}
+		return varListNode;
 	}
 
 	@Override
-	public Type visitShortVar_decl(GOParser.ShortVar_declContext ctx) {
-		LinkedList<Type> exprTypes = getExprTypes(ctx.expr_list());
+	public AST visitShortVar_decl(GOParser.ShortVar_declContext ctx) {
+		List<AST> exprNodes = getExprNodes(ctx.expr_list());
+		AST varDeclList = AST.newSubtree(NodeKind.VAR_DECL_LIST_NODE, NO_TYPE);
+	 	int exprSz = exprNodes.size();
+	 	int valsSz = ctx.identifier_list().ID().size();
 
-		int exprSz = exprTypes.size();
-		int valsSz = ctx.identifier_list().ID().size();
-
-		if(exprSz != valsSz)
-			assignmentMismatchError(ctx.start.getLine(), ctx.getText(), exprSz, valsSz);
+	 	if(exprSz != valsSz)
+	 		assignmentMismatchError(ctx.start.getLine(), ctx.getText(), exprSz, valsSz);
 		
-		for (TerminalNode id : ctx.identifier_list().ID())
-			newVar(id.getSymbol(), exprTypes.removeFirst());
-
-		return null;
+	 	for (TerminalNode id : ctx.identifier_list().ID()){
+	 		int idx = newVar(id.getSymbol(), exprNodes.get(0).type, false);
+			AST varDeclNode = new AST(NodeKind.VAR_ASSIGN_NODE, idx, exprNodes.get(0).type);
+			AST assingNode = AST.newSubtree(NodeKind.SHORT_VAR_DECL_NODE, NO_TYPE,varDeclNode,exprNodes.remove(0));
+			varDeclList.addChild(assingNode);
+		}
+	 	return varDeclList;
 	}
+
+	@Override
+	public AST visitInc_dec_stmt(GOParser.Inc_dec_stmtContext ctx){
+
+		AST varUsed = visit(ctx.operand_name());
+		AST varAssigned = new AST(NodeKind.VAR_ASSIGN_NODE, varUsed.intData, varUsed.type);
+		
+		if(ctx.INCREMENT() != null)
+			return AST.newSubtree(NodeKind.INCREMENT, NO_TYPE, varAssigned, varUsed);
+		return AST.newSubtree(NodeKind.DECREMENT, NO_TYPE, varAssigned, varUsed);
+	}
+
+  // region Types
 
 	@Override
 	public AST visitFloatType(GOParser.FloatTypeContext ctx) {
-		float number = Float.parseFloat(ctx.getText());
-		return new AST(NodeKind.FLOAT_LIT_NODE,number,Type.FLOAT32_TYPE);
+		return new AST(NodeKind.FLOAT_LIT_NODE,0.0f,Type.FLOAT32_TYPE);
 	}
 
 	@Override
 	public AST visitIntType(GOParser.IntTypeContext ctx) {
-		int number = Integer.parseInt(ctx.getText());
-		return new AST(NodeKind.INT_LIT_NODE,number,Type.INT_TYPE);
+		return new AST(NodeKind.VAR_DECL_NODE,0,Type.INT_TYPE);
 	}
 
 	@Override
-	public AST visitStringType(GOParser.StringTypeContext ctx) {
-		String str = ctx.getText();
+	public AST visitStringType(GOParser.StringTypeContext ctx) { //TODO: WTF IS THIS DOING
 		//TODO tabela de String
-		return STRING_TYPE;
+		return new AST(NodeKind.VAR_DECL_NODE,0,Type.STRING_TYPE);
 	}
 
 	@Override
 	public AST visitBoolType(GOParser.BoolTypeContext ctx) {
-		int bool = ctx.getText() == "true"? 1 : 0;
-		return new AST(NodeKind.BOOL_LIT_NODE,bool,Type.BOOLEAN_TYPE);
+
+		return new AST(NodeKind.BOOL_LIT_NODE,1,Type.BOOLEAN_TYPE);
 	}
+
+	@Override
+	public AST visitArrayType(GOParser.ArrayTypeContext ctx) {
+		isArray = true;
+		arraySz = Integer.parseInt(ctx.array_type().INT_LIT().getText());
+		return visit(ctx.array_type().type());
+	}
+//endregion
 
 	@Override
 	public AST visitOperand_name(GOParser.Operand_nameContext ctx) {
-		return checkVar(ctx.ID().getSymbol());
-	}	
-
-	// @Override 
-	// public Type visitExpr_list(GOParser.Expr_listContext ctx) { 
-	// 	 /* TODO Precisamos pegar o tipo do valor que está sendo atribuído
-	// 	mesmo no caso de experssões e índices */
-	// 	for (ExprContext expr : ctx.expr()) {
-			
-	// 	}
-	// 	return null;
-	// }
-
-	@Override
-	public Type visitBasicLiteral(GOParser.BasicLiteralContext ctx) {
-		return basicLitTypeMap.get(ctx.basic.getType());
+		return varUse(ctx.ID().getSymbol());
 	}
 
-	//isso aqui vai ser chato
-	// @Override
-	// public Type visitArrayLiteral(GOParser.ArrayLiteralContext ctx) {
-	// }
+	// // TODO: isso aqui vai ser chato
+	// // @Override
+	// // public Type visitArrayLiteral(GOParser.ArrayLiteralContext ctx) {
+	// // }
 
 	@Override
-	public Type visitFunction_decl(GOParser.Function_declContext ctx) {
-		LinkedList<Type> resultTypes = new LinkedList<Type>();
-		LinkedList<Type> argsTypes = new LinkedList<Type>();
+	public AST visitParameterDecl(GOParser.ParameterDeclContext ctx) {
+		AST typeNode = visit(ctx.type());
+		int idx = newVar(ctx.ID().getSymbol(), typeNode.type, false);
+		return new AST(NodeKind.VAR_DECL_NODE, idx, typeNode.type);
+	}
 
-		if (ctx.parameters().parameterDecl() != null)
-			for (ParameterDeclContext paramCtx : ctx.parameters().parameterDecl())
-				argsTypes.add(visit(paramCtx.type()));
+	@Override
+	public AST visitParameters(GOParser.ParametersContext ctx){
+		AST argsNode = AST.newSubtree(NodeKind.VAR_DECL_LIST_NODE, NO_TYPE);
+
+		for (ParameterDeclContext paramCtx : ctx.parameterDecl())
+			argsNode.addChild(visit(paramCtx));
+		return  argsNode;
+	}
+
+	@Override
+	public AST visitFunction_decl(GOParser.Function_declContext ctx) {
+		List<Type> resultTypes = new ArrayList<Type>();
+		sh.push();
+		
 
 		if (ctx.result() != null)
 			for (TypeContext typeCtx : ctx.result().type())
-				resultTypes.add(visit(typeCtx));
+				resultTypes.add(visit(typeCtx).type);
 
-		newFunc(ctx.ID().getSymbol(),argsTypes,resultTypes); 
-		
-		sh.push();
-		visit(ctx.parameters());
+		int idx = newFunc(ctx.ID().getSymbol(), resultTypes); 
 
-		if(ctx.block() != null)
-			visit(ctx.block());
+		AST paramsNode = visit(ctx.parameters());
 
+		// paramsNode.getChildrenTypes(), resultTypes
+		AST blockNode = visit(ctx.block());
+
+		AST funcNode = AST.newSubtree(NodeKind.FUNC_DECL_NODE, NO_TYPE, idx, paramsNode, blockNode);
+		ft.get(idx).setDeclareNode(funcNode);
+		ft.get(idx).setParams(paramsNode.getChildrenTypes());
 		sh.pop();
-		return null;
-	}
+		
+		return funcNode;
+	} 
 
 	@Override
 	public AST visitFor_stmt(GOParser.For_stmtContext ctx) {
-		AST blockNode = AST.newSubtree(NodeKind.BLOCK_NODE, NO_TYPE);
-		AST forNode = AST.newSubtree(NodeKind.FOR_NODE, NO_TYPE,blockNode);
 		sh.push();
 		//TODO criar a arvore para comparação
-		for(StatementContext stmt :ctx.block().statement_list().statement()){
-			AST children = visitChildren(stmt);
-			blockNode.addChild(children);
+		AST clauseNode = AST.newSubtree(NodeKind.FOR_CLAUSE_NODE, NO_TYPE);
+		if(ctx.for_clause()!=null){
+			if(ctx.for_clause().init_stmt !=null){
+				AST initNode = visit(ctx.for_clause().init_stmt);
+				clauseNode.addChild(initNode);
+			}
+			AST exprNode = visit(ctx.for_clause().expr());
+			if(exprNode.type != BOOLEAN_TYPE)
+				PANIC("SEMANTIC ERROR [Invalid expr] (%d): cannot convert '%s' (%s) to %s\n",
+					ctx.start.getLine(), ctx.for_clause().expr().getText(), exprNode.type.toString(), BOOLEAN_TYPE.toString());
+			clauseNode.addChild(exprNode);
+			if(ctx.for_clause().post_stmt !=null){
+				AST postNode = visit(ctx.for_clause().post_stmt);
+				clauseNode.addChild(postNode);
+			}
 		}
+		else if(ctx.expr() != null){
+			AST exprNode = visit(ctx.expr());
+			clauseNode.addChild(exprNode);
+		}
+		AST blockNode = visit(ctx.block());
+		
+		AST forNode = AST.newSubtree(NodeKind.FOR_NODE, NO_TYPE,clauseNode,blockNode);
 		sh.pop();
 		return forNode;
 	}
 
 	@Override
 	public AST visitIf_stmt(GOParser.If_stmtContext ctx) {
-		AST blockNode = AST.newSubtree(NodeKind.BLOCK_NODE, NO_TYPE);
-		AST ifNode = AST.newSubtree(NodeKind.IF_NODE, Type.NO_TYPE,blockNode);
+		AST ifNode = AST.newSubtree(NodeKind.IF_NODE, Type.NO_TYPE);
+		AST clauseNode = AST.newSubtree(NodeKind.IF_CLAUSE_NODE, NO_TYPE);
 		sh.push();
-		//TODO criar a arvore para comparação
-		for(StatementContext stmt :ctx.block(0).statement_list().statement()){
-			AST children = visitChildren(stmt);
-			blockNode.addChild(children);
+
+		if(ctx.simple_stmt() != null){
+			AST simpleNode = visit(ctx.simple_stmt());
+			clauseNode.addChild(simpleNode);
 		}
+		sh.push();
+		AST exprNode = visit(ctx.expr());
+		clauseNode.addChild(exprNode);
+		if(exprNode.type != BOOLEAN_TYPE)
+			PANIC("SEMANTIC ERROR [Invalid expr] (%d): cannot convert '%s' (%s) to %s\n",
+				ctx.start.getLine(), ctx.expr().getText(), exprNode.type.toString(), BOOLEAN_TYPE.toString());
+
+		AST blockNode = visit(ctx.block(0));
+		ifNode.addChild(clauseNode);
+		ifNode.addChild(blockNode);
+		sh.pop();
+
+		sh.push();
 		if(ctx.ELSE() != null){
 			AST elseNode;
-			if(ctx.if_stmt()!= null)
+			if(ctx.if_stmt() != null)
 				elseNode = AST.newSubtree(NodeKind.ELSE_NODE, Type.NO_TYPE,visit(ctx.if_stmt()));
-			else {
-				AST blockElse = AST.newSubtree(NodeKind.BLOCK_NODE, NO_TYPE);
-				elseNode = AST.newSubtree(NodeKind.IF_NODE, Type.NO_TYPE,blockElse);
-				for(StatementContext stmt :ctx.block(1).statement_list().statement()){
-					AST children = visitChildren(stmt);
-					blockElse.addChild(children);
-				}
-			}
+			else
+				elseNode = AST.newSubtree(NodeKind.ELSE_NODE, Type.NO_TYPE, visit(ctx.block(1)));
 			ifNode.addChild(elseNode);
 		}
+		sh.pop();
 		sh.pop();
 		return ifNode;
 	}
 
 	@Override
-	public Type visitFunccall_stmt(GOParser.Funccall_stmtContext ctx) {
-		isFunction = true;
-		checkVar(ctx.ID().getSymbol());
-		isFunction = false;
+	public AST visitFunccall_stmt(GOParser.Funccall_stmtContext ctx) {
+		var funcNode = checkFuncCall(ctx.ID().getSymbol());
 
-		VarEntry func = sh.lookupVar(ctx.ID().getText());
-		checkFuncArguments(func, ctx.arguments());
+		FunctionEntry func = ft.get(funcNode.intData);
+		var argNodes = checkFuncArguments(func, ctx.arguments());
 
-		return null;
+		for (AST arg : argNodes)
+			funcNode.addChild(arg);
+		return funcNode;
 	}
 
+// region Literal Values 
 	@Override
-	public Type visitArrayType(GOParser.ArrayTypeContext ctx) {
-		this.isArray = true;
-		return visitChildren(ctx);
+	public AST visitIntVal(GOParser.IntValContext ctx){
+		return new AST(NodeKind.INT_LIT_NODE,Integer.parseInt(ctx.getText()),INT_TYPE);
 	}
+	
+	@Override
+	public AST visitNilVal(GOParser.NilValContext ctx) {
+		return new AST(NodeKind.NIL_LIT_NODE, 0, NIL_TYPE);
+	}
+
+	public AST visitStrVal(GOParser.StrValContext ctx) {
+		int idx = st.addString(ctx.getText());
+		return new AST(NodeKind.STR_LIT_NODE, idx, STRING_TYPE);
+	}
+
+	public AST visitFloatVal(GOParser.FloatValContext ctx){
+		return new AST(NodeKind.FLOAT_LIT_NODE,Float.parseFloat(ctx.getText()),FLOAT32_TYPE);
+	}
+
+	public AST visitTrueVal(GOParser.TrueValContext ctx){
+		return new AST(NodeKind.BOOL_LIT_NODE,1,BOOLEAN_TYPE);
+	}
+
+	public AST visitFalseVal(GOParser.FalseValContext ctx){
+		return new AST(NodeKind.BOOL_LIT_NODE ,0,BOOLEAN_TYPE);
+	}
+//endregion
 
 //#region Expressions
-	@Override
-	public Type visitOperandExpr(GOParser.OperandExprContext ctx) {		if(ctx.index() != null){
+	// @Override
+	public AST visitOperandExpr(GOParser.OperandExprContext ctx) {		
+		if(ctx.index() != null){
 			isArray = true;
-			Type type = visit(ctx.operand());
+			AST arrAccessNode = visit(ctx.operand());
 			isArray = false;
-			visit(ctx.index()); // TODO verificar se index é um inteiro
-			return type;
+			AST indexNode = visit(ctx.index().expr());
+			if(indexNode.type != Type.INT_TYPE)
+				PANIC("SEMANTIC ERROR [Invalid index] (%d): cannot convert '%s' (%s) to %s\n",
+					ctx.start.getLine(), ctx.index().getText(), indexNode.type.toString(), Type.INT_TYPE.toString());
+			arrAccessNode.addChild(indexNode);
+			return arrAccessNode;
 		}
 		if(ctx.arguments() != null){
-			isFunction = true;
 			Token nameFunc = ctx.operand().operand_name().ID().getSymbol();
-			checkVar(nameFunc);
-			isFunction = false;
-			// visit(ctx.arguments());
-			LinkedList<Type> argumentsTypes = getExprTypes(ctx.arguments().expr_list());
-			String funcName = nameFunc.getText();
-			VarEntry func = sh.lookupVar(funcName);
-
-			checkFuncArguments(func, ctx.arguments());
-
+			var funcNode = checkFuncCall(nameFunc);
+			FunctionEntry func = ft.get(funcNode.intData);
+	
 			// função em uma expressão deve ter um unico valor de retorno
-			if (func.funcReturn.size() == 1) 
-				return func.funcReturn.get(0);
+			if (func.returns.size() == 0)
+				PANIC("SEMANTIC ERROR (%d): %s (no value) used as value\n", nameFunc.getLine(),ctx.getText());
+			else if (func.returns.size() > 1)
+				PANIC("SEMANTIC ERROR (%d):  multiple-value %s (value of type (%s)) in single-value context\n",
+					nameFunc.getLine(), ctx.getText(), Type.listToString(func.returns));
 			
-			if (func.funcReturn.size() == 0) {
-				System.err.printf("SEMANTIC ERROR (%d): %s (no value) used as value", nameFunc.getLine(),ctx.getText());
-			} else {
-				System.err.printf("SEMANTIC ERROR (%d):  multiple-value %s (value of type (%s)) in single-value context\n",
-					nameFunc.getLine(),ctx.getText(),Type.listToString(func.funcReturn));
-			}
-			System.exit(1);
+			var argsNode = checkFuncArguments(func, ctx.arguments());
+			funcNode.addChildren(argsNode);
+			return funcNode;
 		}
 		return visit(ctx.operand());
 	}
 
 	@Override
-	public Type visitOperand(GOParser.OperandContext ctx) { // literal | operand_name | L_PR expr R_PR;
+	public AST visitOperand(GOParser.OperandContext ctx) { // literal | operand_name | L_PR expr R_PR;
 		if (ctx.literal() != null)
 			return visit(ctx.literal());
 		if(ctx.expr() != null)
@@ -488,26 +700,35 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 	}
 
 	@Override
-	public Type visitUnary(GOParser.UnaryContext ctx) {
-		Type type = visitChildren(ctx);
-		boolean wasExpectingBoolType = ctx.NOT() != null && type != BOOLEAN_TYPE;
-		boolean wasExpectingNumType = type != INT_TYPE && type != FLOAT32_TYPE;
-		if (wasExpectingBoolType || wasExpectingNumType)
-			operatorNotDefinedError(ctx.start.getLine(), ctx.getText(), ctx.unary_op.getText(), type);
+	public AST visitUnary(GOParser.UnaryContext ctx) {
+		AST node = visitChildren(ctx);
+	
+		if(ctx.NOT() != null) {
+			if(node.type != BOOLEAN_TYPE)
+				operatorNotDefinedError(ctx.start.getLine(), ctx.getText(), ctx.unary_op.getText(), node.type);
+			return AST.newSubtree(NodeKind.NOT_NODE, BOOLEAN_TYPE, node);
+		}
+		// operacoes unarias de + e - são somente para numeros
+		if (!Type.isNumber(node.type))
+			operatorNotDefinedError(ctx.start.getLine(), ctx.getText(), ctx.unary_op.getText(), node.type);
 
-		return type;
+		var kind = ctx.PLUS() != null ? NodeKind.PLUS_NODE : NodeKind.MINUS_NODE;
+		return AST.newSubtree(kind, node.type, node);
 	}
 
 	@Override
-	public Type visitMultDiv(GOParser.MultDivContext ctx) {
-		Type left = visit(ctx.expr(0));
-		Type right = visit(ctx.expr(1));
-		Type type = Type.numberTypeWidening(left, right);
+	public AST visitMultDiv(GOParser.MultDivContext ctx) {
+		AST left = visit(ctx.expr(0));
+		AST right = visit(ctx.expr(1));
 
-		if (type == null)
-			mismatchedOperationError(ctx.start.getLine(), ctx.getText(), left, right);
+		NodeKind node = ctx.DIV() != null ? NodeKind.DIV_NODE : NodeKind.TIMES_NODE;
 
-		return type;
+		if (!Type.isBothNumbers(left.type, right.type))
+			mismatchedOperationError(ctx.start.getLine(), ctx.getText(), left.type, right.type);
+
+		var children = AST.numberWidening(left, right);
+
+		return AST.newSubtree(node, children[0].type, left, right);
 	}
 
 	@Override
@@ -515,28 +736,18 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 		AST l = visit(ctx.expr(0));
 		AST r = visit(ctx.expr(1));
 
-		NodeKind node = null;
-
-		if (ctx.PLUS() != null) {
-			node = NodeKind.PLUS_NODE;
-		} else if ( ctx.MINUS() != null) {
-			node = NodeKind.MINUS_NODE;
-		}
-
+		NodeKind node = ctx.PLUS() != null ? NodeKind.PLUS_NODE : NodeKind.MINUS_NODE;
 		
-		if (l.type == STRING_TYPE && r.type == STRING_TYPE)
+		if (l.type == STRING_TYPE 
+			&& r.type == STRING_TYPE 
+			&& node == NodeKind.PLUS_NODE)
 			return AST.newSubtree(node, STRING_TYPE, l, r);
 
 		if (!Type.isBothNumbers(l.type, r.type))
 			mismatchedOperationError(ctx.start.getLine(), ctx.getText(), l.type, r.type);
 
-		if (Type.isI2FWideningNeeded(l.type, r.type)){
-			if (Type.isI2FTarget(l.type) ){
-
-			}
-		}
-				
-		return AST.newSubtree(node, NO_TYPE, l, r);
+		var children = AST.numberWidening(l, r);
+		return AST.newSubtree(node, children[0].type, children);
 	}
 
 	@Override
@@ -563,13 +774,14 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 		}
 
 		if (left.type == STRING_TYPE && right.type == STRING_TYPE)
-			return AST.newSubtree(node, STRING_TYPE, left, right);
+			return AST.newSubtree(node, BOOLEAN_TYPE, left, right);
 
-		Type type = Type.numberTypeWidening(left.type, right.type);
-		if (type == null)
+		if (!Type.isBothNumbers(left.type, right.type))
 			mismatchedOperationError(ctx.start.getLine(), ctx.getText(), left.type, right.type);
 
-		return AST.newSubtree(node, BOOLEAN_TYPE, left, right);
+		var children = AST.numberWidening(left, right);
+
+		return AST.newSubtree(node, BOOLEAN_TYPE, children);
 	}
 
 	@Override
@@ -593,7 +805,4 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 		
 		return AST.newSubtree(NodeKind.OR_NODE, BOOLEAN_TYPE, left, right);
 	}
-
-//#endregion
-
 }

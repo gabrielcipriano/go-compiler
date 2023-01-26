@@ -3,10 +3,11 @@ package tables;
 import java.util.LinkedList;
 
 import typing.Type;
-import typing.SpecialType;
 
 public final class ScopeHandler {
   LinkedList<LinkedList<VarEntry>> scopes = new LinkedList<LinkedList<VarEntry>>();
+
+	public final int GLOBAL_SCOPE = 1;
 
   public int scopeDepth = 0;
 
@@ -25,19 +26,16 @@ public final class ScopeHandler {
     return null;
   }
 
-  public Void addVar(String name, int line, Type type, SpecialType special) {
-    this.scopes.getLast().add(new VarEntry(name, line, this.scopeDepth, type, special));
-    return null;
+  public VarEntry addVar(String name, int line, Type type, int arraySz, boolean isConst) {
+    VarEntry newVar = new VarEntry(name, line, this.scopeDepth, type, arraySz, isConst);
+    this.scopes.getLast().add(newVar);
+    return newVar;
   }
 
-  public Void addVar(String name, int line, SpecialType special,LinkedList<Type> funcArgs, LinkedList<Type> funcReturns) {
-    this.scopes.getLast().add(new VarEntry(name, line, this.scopeDepth, special, funcArgs,funcReturns));
-    return null;
-  }
-
-  public Void addVar(String name, int line, Type type) {
-    this.scopes.getLast().add(new VarEntry(name, line, this.scopeDepth, type));
-    return null;
+  public VarEntry addVar(String name, int line, Type type, boolean isConst) {
+    VarEntry newVar = new VarEntry(name, line, this.scopeDepth, type, isConst);
+    this.scopes.getLast().add(newVar);
+    return newVar;
   }
 
   public VarEntry lookupVar(String name) {
