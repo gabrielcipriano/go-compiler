@@ -10,14 +10,17 @@ import tables.VarTable;
 public class CallStack extends ArrayDeque<StackFrame>{
   public final int GLOBAL_VARS = -1;
   private final VarTable vt;
+  private final FunctionTable ft;
   private final Memory memory;
 
-  public CallStack(Memory memory, VarTable vt) {
+  public CallStack(Memory memory, VarTable vt, FunctionTable ft) {
     super();
     this.vt = vt;
+    this.ft = ft;
     this.memory = memory;
     Map<Integer,Integer> emptyAddressMap = new LinkedHashMap<Integer,Integer>();
     this.add(new StackFrame(GLOBAL_VARS, vt, memory, emptyAddressMap));
+    System.out.println(this.getLast().toString(ft));
   }
   
   public int getVarAddress(int varId) {
@@ -26,12 +29,13 @@ public class CallStack extends ArrayDeque<StackFrame>{
 
   public void push(int funcId){
     this.add(new StackFrame(funcId, vt, memory, this.getGlobalAddressMap()));
+    System.out.println(this.getLast().toString(ft));
   }
 
   @Override
   public StackFrame pop(){
     StackFrame last = this.removeLast();
-    last.clearMemory(memory);
+    last.clearMemory();
     return last;
   }
 

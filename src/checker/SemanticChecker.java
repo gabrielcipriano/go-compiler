@@ -152,7 +152,7 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 		return idx;
 	}
 
-	private int newFunc(Token token, List<Type> argList, List<Type> returnList ) {
+	private int newFunc(Token token, List<Type> returnList ) {
 		String funcName = token.getText();
 		int line = token.getLine();
 		VarEntry entry = sh.lookupVar(funcName);
@@ -164,7 +164,7 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 			PANIC("SEMANTIC ERROR (%d): function '%s' already declared at line %d.\n", 
 				line, funcName,ft.get(ft.lookupFunc(funcName)).line);
 
-		int idx = ft.addFunction(funcName, line, argList, returnList);
+		int idx = ft.addFunction(funcName, line, returnList);
 		return idx;
 	}
 
@@ -529,18 +529,21 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 		List<Type> resultTypes = new ArrayList<Type>();
 		sh.push();
 		
-		AST paramsNode = visit(ctx.parameters());
 
 		if (ctx.result() != null)
 			for (TypeContext typeCtx : ctx.result().type())
 				resultTypes.add(visit(typeCtx).type);
 
-		int idx = newFunc(ctx.ID().getSymbol(), paramsNode.getChildrenTypes(), resultTypes); 
+		int idx = newFunc(ctx.ID().getSymbol(), resultTypes); 
 
+		AST paramsNode = visit(ctx.parameters());
+
+		// paramsNode.getChildrenTypes(), resultTypes
 		AST blockNode = visit(ctx.block());
 
 		AST funcNode = AST.newSubtree(NodeKind.FUNC_DECL_NODE, NO_TYPE, idx, paramsNode, blockNode);
 		ft.get(idx).setDeclareNode(funcNode);
+		ft.get(idx).setParams(paramsNode.getChildrenTypes());
 		sh.pop();
 		
 		return funcNode;

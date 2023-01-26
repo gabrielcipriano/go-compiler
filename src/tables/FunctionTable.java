@@ -21,9 +21,9 @@ public final class FunctionTable {
 		return -1;
 	}
 
-	public int addFunction(String name, int line, List<Type> params, List<Type> returns) {
+	public int addFunction(String name, int line, List<Type> returns) {
 		int idxAdded = table.size();
-		FunctionEntry entry = new FunctionEntry(name, line, params, returns, idxAdded);
+		FunctionEntry entry = new FunctionEntry(name, line, returns, idxAdded);
 		table.add(entry);
 		return idxAdded;
 	}

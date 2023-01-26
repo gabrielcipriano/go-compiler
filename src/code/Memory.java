@@ -12,16 +12,10 @@ import tables.VarTable;
  */
 @SuppressWarnings("serial")
 public class Memory extends Vector<Word> {
-	private final VarTable vt;
 
 	// Cria a memória do tamanho das tabela de variáveis.
 	// O índice na tabela é o "endereço" na memória.
-	public Memory(VarTable vt) {
-		this.vt = vt;
-
-		for (int i = 0; i < vt.size(); i++) {
-			this.add(Word.fromInt(0));
-		}
+	public Memory() {
 	}
 
 	public void add(int value) {
@@ -60,10 +54,9 @@ public class Memory extends Vector<Word> {
 		StringBuilder sb = new StringBuilder();
 		Formatter f = new Formatter(sb);
 		f.format("*** Memory: \n");
-		f.format("%4s %10s %5s\n", "line", "name", "value");
+		f.format("%4s %5s\n", "idx", "value");
 		for (int i = 0; i < this.size(); i++) {
-			boolean isVar = i < this.vt.size();
-			f.format("%4d %10s %5d\n", isVar ? this.vt.get(i).line : 0, isVar ? this.vt.get(i).name : "", this.get(i).toInt());
+			f.format("%4d %5d\n",  i , this.get(i).toInt());
 		}
 		f.format("\n");
 		f.close();
