@@ -2,16 +2,18 @@ package main
 
 import "fmt"
 
-func soma(c float32, d int) float32 {
-	return c + d
+var counter int = 0
+
+func somaUmPrint(a int) {
+	newA := a + 1
+	fmt.Println("valor: ", newA)
 }
 
 func main() {
-	var c float32 // 5
-	var d int = 3
+	for i := 0; i < 10; i++ {
+		somaUmPrint(i)
+		counter++
+	}
 
-	// ...
-	c = soma(c, 1)
-
-	fmt.Println(c, soma(d, d))
+	fmt.Println("novo valor de counter:", counter)
 }

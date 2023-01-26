@@ -62,7 +62,7 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 	}
 
 	// Testa se o dado token foi declarado antes.
-	private int checkVar(VarEntry entry, String varName,int line) {
+	private int checkVar(VarEntry entry, String varName, int line) {
 		if (entry == null)
 			PANIC("SEMANTIC ERROR (%d): variable was not declared.\n", line, varName);
 		if (isArray && !entry.isArray())
@@ -147,7 +147,7 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 		VarEntry entry = sh.addVar(varName, line, type, isConst);
 		int idx = vt.addVar(entry);
 
-		if (sh.scopeDepth != sh.GLOBAL_SCOPE)
+		if (!sh.isGlobalScope())
 			entry.setFuncId(ft.getLastIdx());
 		return idx;
 	}
@@ -173,7 +173,7 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 		isArray = false;
 		int idx = vt.addVar(entry);
 
-		if (sh.scopeDepth != sh.GLOBAL_SCOPE)
+		if (!sh.isGlobalScope())
 			entry.setFuncId(ft.getLastIdx());
 
 		return idx;
@@ -212,7 +212,6 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 
 	@Override
 	public AST visitProgram(GOParser.ProgramContext ctx) {
-		sh.push();
 		this.root = AST.newSubtree(NodeKind.PROGRAM_NODE, NO_TYPE);
 		visit(ctx.package_clause());
 		for(var line : ctx.program_sect()){

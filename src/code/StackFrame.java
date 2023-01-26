@@ -15,22 +15,45 @@ import tables.VarTable;
 
 public class StackFrame {
   final int framePointer;
-  private final int funcId;
+  private final FunctionEntry func;
   final Map<Integer, Integer> vars;
   final Memory memory;
 
+  final static int GLOBAL_FRAME_VARS = -1;
   final static int NO_ADDRESS = -1;
   
-  public StackFrame(int funcId, VarTable varTable, Memory memory, Map<Integer,Integer> globalVar) {
+  public StackFrame(FunctionEntry func, List<Word> params, VarTable varTable, Memory memory, Map<Integer,Integer> globalVar) {
     this.framePointer = memory.size();
-    this.funcId = funcId;
+    this.func = func;
     this.memory = memory;
+    this.vars = new LinkedHashMap<Integer, Integer>();
     int offset = 0;
-    vars = new LinkedHashMap<Integer, Integer>();
+  
     vars.putAll(globalVar);
     for (int i = 0; i < varTable.size(); i++) {
       VarEntry var = varTable.get(i);
-      if(var.funcId == funcId) {
+      if(var.funcId == func.id) {
+        int address = framePointer + offset;
+        if (params.size() > 0)
+          memory.add(params.remove(0));
+        else
+          memory.add(0);
+        this.vars.put(var.index, address);
+        offset++;
+      }
+    }
+  }
+
+  public StackFrame(VarTable varTable, Memory memory) {
+    this.framePointer = memory.size();
+    this.func = null;
+    this.memory = memory;
+    this.vars = new LinkedHashMap<Integer, Integer>();
+    int offset = 0;
+  
+    for (int i = 0; i < varTable.size(); i++) {
+      VarEntry var = varTable.get(i);
+      if(var.funcId == GLOBAL_FRAME_VARS) {
         int address = framePointer + offset;
         memory.add(0);
         this.vars.put(var.index, address);
@@ -52,10 +75,10 @@ public class StackFrame {
     return vars.get(idx);
   }
 
-  public String toString(FunctionTable ft) {
+  public String toString() {
 		StringBuilder sb = new StringBuilder();
 		Formatter f = new Formatter(sb);
-    String funcName = funcId != -1 ? ft.get(funcId).name : "global";
+    String funcName = func != null ? func.name : "global";
 		f.format("*** StackFrame %s\n", funcName);
 		f.format("%4s %10s %5s\n", "id", "addrs", "value");
     var entrySet = vars.entrySet().iterator();

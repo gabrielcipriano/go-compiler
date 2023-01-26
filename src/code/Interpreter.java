@@ -53,9 +53,9 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 		for (int i = 0; i < ft.getSize() ; i++) {
 			FunctionEntry funcEntry = ft.get(i);
 			if (funcEntry.name.equals("main")) {
-				callStack.push(funcEntry.id);
+				callStack.push(funcEntry.id, stack);
 				visit(funcEntry.declareNode.getChild(1));
-				callStack.pop();
+				callStack.popFrame();
 				hasMain = true;
         break;
 			}
@@ -64,8 +64,6 @@ public class Interpreter extends ASTBaseVisitor<Void> {
       System.err.println("PLEASE PROVIDE A MAIN FUNCTION");
 			System.exit(1);
 		}
-		System.out.println();
-		System.out.println(memory);
 		io.close();
 
 		return null; // Java exige um valor de retorno mesmo para Void... :/
@@ -73,15 +71,19 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 
 	@Override
 	protected Void visitAssign(AST node) {
-		// visits var assign (stacking var index)
+		// visits var assign (stacking var iD)
 		visit(node.getChild(0));
 		// visits expression
 		visit(node.getChild(1));
 
 		Word value = stack.pop();
-		int varIndex = stack.popi();
+		int varId = stack.popi();
 
-		memory.store(callStack.getVarAddress(varIndex), value);
+		// ((ACHO)) que dá pra fazer isso diretamente sem checar o tipo
+		// pois ambos stack e memory usam word internamente
+		int varAddress = callStack.getVarAddress(varId);
+
+		memory.store(varAddress, value);
 		return null;
 	}
 
@@ -120,8 +122,8 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 
 	@Override
 	protected Void visitVarAssign(AST node) {
-		int varIndex = node.intData;
-		stack.push(varIndex);
+		int varId = node.intData;
+		stack.push(varId);
 		return null;
 	}
 
@@ -139,6 +141,7 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 	// TODO
 	@Override
 	protected Void visitReturn(AST node) {
+		visitAllChildren(node);
 		return null;
 	}
 
@@ -165,7 +168,6 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 
 	@Override
 	protected Void visitFor(AST node) {
-
 		AST clause = node.getChild(0);
 		// Avaliar pros casos sem ini_stmt e post_stmt
 		if(clause.hasChild(1)){
@@ -297,13 +299,14 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 
 	@Override
 	protected Void visitVarUse(AST node) {
-		int varIndex = node.intData;
+		int varId = node.intData;
 	
 		// TODO: TRATAR ARRAY(??)
 
 		// ((ACHO)) que dá pra fazer isso diretamente sem checar o tipo
 		// pois ambos stack e memory usam word internamente
-		int varAddress = callStack.getVarAddress(varIndex);
+		int varAddress = callStack.getVarAddress(varId);
+
 		Word word = memory.get(varAddress);
 		stack.push(word);
 		
@@ -313,11 +316,12 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 	@Override
 	protected Void visitFuncCall(AST node) {
 		int funcId = node.intData;
-		callStack.push(funcId);
 
-		visitAllChildren(node);
+		visitAllChildren(node); // stacks params
+
+		callStack.push(funcId, stack);
 		visit(ft.get(funcId).declareNode.getChild(1)); // visits block
-		callStack.pop();
+		callStack.popFrame();
 		return null;
 	}
 
