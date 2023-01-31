@@ -8,10 +8,9 @@ func fibonacci(a int, b int, limit int) int {
 
 	if next <= limit {
 		return fibonacci(b, next, limit)
-	} else {
-		fmt.Println(b)
-		return b
 	}
+	fmt.Println(b)
+	return b
 }
 
 func fibonacciSequence(limit int) int {

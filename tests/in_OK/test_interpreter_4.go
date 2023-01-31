@@ -2,14 +2,27 @@ package main
 
 import "fmt"
 
-func gcd(u int, v int) int {
-	if (v == 0) return u
-	else return gcd(v, u%v)
+func fibonacciIterativo(a int, b int, limit int) int {
+	var next int
+
+	for b <= limit {
+		fmt.Println(a)
+		next = a + b
+		a = b
+		b = next
+	}
+
+	fmt.Println(a)
+	return a
+}
+
+func fibonacciSequence(limit int) int {
+	fmt.Println("Fibonacci sequence:")
+	return fibonacciIterativo(0, 1, limit)
 }
 
 func main() {
-	// scan("%d%d", x, y)
-	x := 8
-	y := 2
-	fmt.Println(gcd(x, y))
+	lastFibonacci := fibonacciSequence(30)
+
+	fmt.Println("Last fibonacci before limit:", lastFibonacci)
 }

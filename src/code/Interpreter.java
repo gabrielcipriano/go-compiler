@@ -30,6 +30,7 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 	private final VarTable vt;
 	private final Cpu cpu;
 	private final Io io;
+	private final FuncExecutor FuncExecutor;
 	
 
 	// Construtor basicão.
@@ -42,6 +43,28 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 		this.cpu = new Cpu(stack, memory, st, vt);
 		this.io = new Io(stack, memory, st);
 		this.callStack = new CallStack(memory, vt, ft);
+		this.FuncExecutor = new FuncExecutor(stack, callStack, ft, memory, st, vt, cpu, io);
+	}
+
+	protected Interpreter(
+		DataStack stack,
+		CallStack callStack,
+		FunctionTable ft,
+		Memory memory,
+		StrTable st,
+		VarTable vt,
+		Cpu cpu,
+		Io io
+	) {
+		this.stack = stack;
+		this.callStack = callStack;
+		this.ft = ft;
+		this.memory = memory;
+		this.st = st;
+		this.vt = vt;
+		this.cpu = cpu;
+		this.io = io;
+		this.FuncExecutor = new FuncExecutor(stack, callStack, ft, memory, st, vt, cpu, io);
 	}
 
 	@Override
@@ -54,9 +77,7 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 		for (int i = 0; i < ft.getSize(); i++) {
 			FunctionEntry funcEntry = ft.get(i);
 			if (funcEntry.name.equals("main")) {
-				callStack.push(funcEntry.id, stack);
-				visit(funcEntry.declareNode.getChild(1));
-				callStack.popFrame();
+				FuncExecutor.call(funcEntry);
 				hasMain = true;
 				break;
 			}
@@ -130,18 +151,7 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 
 	@Override
 	protected Void visitBlock(AST node) {
-		// return visitAllChildren(node);/*
-
-		Iterator<AST> children = node.iterateChildren();
-		
-		while(children.hasNext()){
-			var child = children.next();
-			visit(child);
-			if(child.kind == NodeKind.RETURN_NODE)
-				return null;
-		}
-		return null;//*/
-		
+		return visitAllChildren(node);
 	}
 
 	// TODO
@@ -330,10 +340,7 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 		int funcId = node.intData;
 
 		visitAllChildren(node); // stacks params
-
-		callStack.push(funcId, stack);
-		visit(ft.get(funcId).declareNode.getChild(1)); // visits block
-		callStack.popFrame();
+		FuncExecutor.call(ft.get(funcId));
 		return null;
 	}
 
