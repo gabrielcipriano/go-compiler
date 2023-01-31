@@ -5,9 +5,10 @@ import "fmt"
 func countdown(val int) int {
 	if val < 0 {
 		return 0
+	} else {
+		fmt.Println(val)
+		return countdown(val - 1)
 	}
-	fmt.Println(val)
-	return countdown(val - 1)
 }
 
 func main() int {

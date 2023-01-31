@@ -3,6 +3,7 @@ import java.util.Iterator;
 
 import ast.AST;
 import ast.ASTBaseVisitor;
+import ast.NodeKind;
 import tables.FunctionEntry;
 import tables.FunctionTable;
 import tables.StrTable;
@@ -49,19 +50,19 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 		// visit(node.getChild(1)); // run block
 
 		visitAllChildren(node);
-    boolean hasMain = false;
-		for (int i = 0; i < ft.getSize() ; i++) {
+		boolean hasMain = false;
+		for (int i = 0; i < ft.getSize(); i++) {
 			FunctionEntry funcEntry = ft.get(i);
 			if (funcEntry.name.equals("main")) {
 				callStack.push(funcEntry.id, stack);
 				visit(funcEntry.declareNode.getChild(1));
 				callStack.popFrame();
 				hasMain = true;
-        break;
+				break;
 			}
 		}
-    if(!hasMain) {
-      System.err.println("PLEASE PROVIDE A MAIN FUNCTION");
+		if (!hasMain) {
+			System.err.println("PLEASE PROVIDE A MAIN FUNCTION");
 			System.exit(1);
 		}
 		io.close();
@@ -129,7 +130,18 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 
 	@Override
 	protected Void visitBlock(AST node) {
-		return visitAllChildren(node);
+		// return visitAllChildren(node);/*
+
+		Iterator<AST> children = node.iterateChildren();
+		
+		while(children.hasNext()){
+			var child = children.next();
+			visit(child);
+			if(child.kind == NodeKind.RETURN_NODE)
+				return null;
+		}
+		return null;//*/
+		
 	}
 
 	// TODO
