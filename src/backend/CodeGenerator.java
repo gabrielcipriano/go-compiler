@@ -3,17 +3,30 @@ package backend;
 import ast.AST;
 import ast.ASTBaseVisitor;
 import backend.commons.CodeOutput;
+import backend.wasm.WasmEmitter;
+import backend.wasm.WasmType;
+import tables.FunctionTable;
+import tables.StrTable;
+import tables.VarTable;
 
-import static backend.WasmType.i32;
-import static backend.WasmType.f32;
+import static backend.wasm.WasmType.f32;
+import static backend.wasm.WasmType.i32;
+
+import java.util.Iterator;
 
 public class CodeGenerator extends ASTBaseVisitor<Void> {
+  private final FunctionTable ft;
+	private final StrTable st;
+	private final VarTable vt;
 
   private final CodeOutput output = new StdPrinter();
-
   private final WasmEmitter emitter;
 
-  CodeGenerator() {
+  CodeGenerator(StrTable st, VarTable vt, FunctionTable ft) {
+    this.st = st;
+		this.vt = vt;
+		this.ft = ft;
+  
     this.emitter = new WasmEmitter(output);
   }
 
@@ -184,7 +197,7 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
     WasmType type = node.getChild(0).isInt() ? i32 : f32;
   
     if (!node.hasChild(1)) { // unary
-      // 0 - value inverts signal
+      // "0 - value" inverts signal
       emitter.emitConst(type == i32 ? 0 : 0.0f);
       visit(node.getChild(0));
     } else {
@@ -333,5 +346,13 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
     emitter.emitI2F();
     return null;
   }
-  
+
+  // *** HELPERS ***
+	private Void visitAllChildren(AST node) {
+		Iterator<AST> children = node.iterateChildren();
+		while(children.hasNext())
+			visit(children.next());
+		return null;
+	}
+
 }

@@ -1,4 +1,4 @@
-package backend;
+package backend.wasm;
 
 public enum WasmType {
   i32,

@@ -1,4 +1,4 @@
-package backend;
+package backend.wasm;
 
 import backend.commons.CodeOutput;
 import backend.commons.Indent;
@@ -8,7 +8,7 @@ public class WasmEmitter {
   public final Indent idt = new Indent();
   public final CodeOutput out;
 
-  WasmEmitter(CodeOutput output) {
+  public WasmEmitter(CodeOutput output) {
     this.out = output;
     this.out.setIndent(idt);
   }

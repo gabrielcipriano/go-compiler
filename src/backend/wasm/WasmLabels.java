@@ -1,4 +1,4 @@
-package backend;
+package backend.wasm;
 
 import backend.commons.LabelCounter;
 
