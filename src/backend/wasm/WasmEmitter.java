@@ -25,49 +25,68 @@ public class WasmEmitter {
     out.iwriteln("(f32.const " + value + ")");
   }
 
+  public void emitLocalDeclare(WasmType type, String label) {
+    out.iwriteln("(local $" + label + " " + type + ")");
+  }
+
   public void emitLocalGet(int idx) {
-    out.iwriteln("(local.get " + idx + ")");
+    out.iwriteln("(local.get $" + idx + ")");
   }
 
   public void emitLocalGet(String label) {
-    out.iwriteln("(local.get " + label + ")");
+    out.iwriteln("(local.get $" + label + ")");
   }
 
   public void emitLocalSet(String label) {
-    out.iwriteln("(local.set " + label + ")");
+    out.iwriteln("(local.set $" + label + ")");
   }
   
   /** The local.tee instruction sets the value of a local variable and loads the value onto the stack. */
   public void emitLocalTee(String label) {
-    out.iwriteln("(local.tee " + label + ")");
+    out.iwriteln("(local.tee $" + label + ")");
   }
 
+  public void emitGlobalDeclare(String label, int value) {
+    out.iwrite("(global $" + label + " (mut i32) ");
+    out.iwriteln("(i32.const " + value + ") )");
+  }
+
+  public void emitGlobalDeclare(String label, float value) {
+    out.iwrite("(global $" + label + " (mut f32) ");
+    out.iwriteln("(f32.const " + value + ") )");
+  }
+
+
   public void emitGlobalGet(String label) {
-    out.iwriteln("(global.get " + label + ")");
+    out.iwriteln("(global.get $" + label + ")");
   }
 
   public void emitGlobalSet(String label) {
-    out.iwriteln("(global.set " + label + ")");
+    out.iwriteln("(global.set $" + label + ")");
+  }
+
+  public void emitGlobalTee(String label) {
+    emitGlobalSet(label);
+    emitGlobalGet(label);
   }
 
   /** global auxiliar var for temporary values */
   public void emitAuxGet(WasmType type) {
-    String label = "$aux_" + type;
+    String label = "aux_" + type;
     emitGlobalGet(label);
   }
 
   /** global auxiliar var for temporary values */
   public void emitAuxSet(WasmType type) {
-    String label = "$aux_" + type;
+    String label = "aux_" + type;
     emitGlobalSet(label);
   }
 
   /** global auxiliar var for temporary values.
    * tee instruction sets the value of a local variable and loads the value onto the stack */
   public void emitAuxTee(String type) {
-    String label = "$aux_" + type;
-    emitGlobalSet(label);
-    emitGlobalGet(label);
+    String label = "aux_" + type;
+    emitGlobalTee(label);
   }
 
   /** The drop instruction, pops a value from the stack, and discards it. */
@@ -94,7 +113,7 @@ public class WasmEmitter {
 
   /** function call */
   public void emitCall(String funcLabel) {
-    out.iwriteln("(call " + funcLabel + ")");
+    out.iwriteln("(call $" + funcLabel + ")");
   }
 
   // OPERATIONS

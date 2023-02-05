@@ -38,7 +38,23 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
   @Override
   protected Void visitShortVarDecl(AST node) {
-    // TODO Auto-generated method stub
+    int idx = node.getChild(0).intData;
+    var entry = vt.get(idx);
+    String label = entry.name;
+
+    if (entry.isGlobal()) {
+      // TODO: atualmente, declaração de variaveis globais só suporta int e float literais
+      var lit = node.getChild(1);
+      emitter.emitGlobalDeclare(label, lit.isFloat() ? lit.floatData : lit.intData);
+      return null;
+    }
+
+    emitter.emitLocalDeclare(entry.isFloat() ? f32 : i32, label);
+    
+    visit(node.getChild(1));
+
+    emitter.emitLocalSet(label);
+    
     return null;
   }
 
@@ -56,13 +72,20 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
   @Override
   protected Void visitAssignList(AST node) {
-    // TODO Auto-generated method stub
-    return null;
+    return visitAllChildren(node);
   }
 
   @Override
   protected Void visitVarDecl(AST node) {
-    // TODO Auto-generated method stub
+    int idx = node.intData;
+    var entry = vt.get(idx);
+    String label = entry.name;
+
+    if (entry.isGlobal())
+      emitter.emitGlobalDeclare(label, entry.isFloat() ? 0.0f : 0);
+    else
+      emitter.emitLocalDeclare(entry.isFloat() ? f32 : i32, label);
+    
     return null;
   }
 
@@ -74,8 +97,7 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
   @Override
   protected Void visitVarDeclList(AST node) {
-    // TODO Auto-generated method stub
-    return null;
+    return visitAllChildren(node);
   }
 
   @Override
@@ -86,7 +108,7 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
   @Override
   protected Void visitReturn(AST node) {
-    // TODO Auto-generated method stub
+    emitter.emitReturn();
     return null;
   }
 
@@ -182,13 +204,26 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
   @Override
   protected Void visitVarUse(AST node) {
-    // TODO Auto-generated method stub
+    int idx = node.intData;
+    var entry = vt.get(idx);
+    String label = entry.name;
+  
+    if (entry.isGlobal())
+      emitter.emitGlobalGet(label);
+    else 
+      emitter.emitLocalGet(label);
+
     return null;
   }
 
   @Override
   protected Void visitFuncCall(AST node) {
-    // TODO Auto-generated method stub
+    visitAllChildren(node);
+    int idx = node.intData;
+
+    String funcLabel = ft.get(idx).name;
+
+    emitter.emitCall(funcLabel);
     return null;
   }
 

@@ -3,7 +3,6 @@ import java.util.Iterator;
 
 import ast.AST;
 import ast.ASTBaseVisitor;
-import ast.NodeKind;
 import tables.FunctionEntry;
 import tables.FunctionTable;
 import tables.StrTable;

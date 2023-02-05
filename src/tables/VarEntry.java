@@ -68,6 +68,10 @@ public final class VarEntry {
     return type == Type.STRING_TYPE;
   }
 
+  public boolean isGlobal() {
+    return this.scope == 1;
+  }
+
   public String toStringNonVerbose() {
 		StringBuilder sb = new StringBuilder();
 		Formatter f = new Formatter(sb);
