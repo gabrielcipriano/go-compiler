@@ -44,13 +44,11 @@ public class WasmEmitter {
   }
 
   public void emitGlobalDeclare(String label, int value) {
-    out.iwrite("(global $" + label + " (mut i32) ");
-    out.iwriteln("(i32.const " + value + ") )");
+    out.iwritelnf("(global $%s (mut i32) (i32.const %d))", label, value);
   }
 
   public void emitGlobalDeclare(String label, float value) {
-    out.iwrite("(global $" + label + " (mut f32) ");
-    out.iwriteln("(f32.const " + value + ") )");
+    out.iwritelnf("(global $%s (mut f32) (f32.const %f))", label, value);
   }
 
 
@@ -220,7 +218,6 @@ public class WasmEmitter {
   public void emitEnd() {
     out.unindent();
     out.iwriteln(")");
-    out.iwriteln("");
   }
 
   /** calls the start function (usually main) */

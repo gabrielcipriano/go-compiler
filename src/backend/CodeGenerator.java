@@ -23,7 +23,7 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
   private final CodeOutput output = new StdPrinter();
   private final WasmEmitter emitter;
 
-  CodeGenerator(StrTable st, VarTable vt, FunctionTable ft) {
+  public CodeGenerator(StrTable st, VarTable vt, FunctionTable ft) {
     this.st = st;
 		this.vt = vt;
 		this.ft = ft;
@@ -61,13 +61,19 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
   @Override
   protected Void visitProgram(AST node) {
-    // TODO Auto-generated method stub
+    emitter.emitModuleBegin();
+    emitter.emitRuntimeSetup();
+
+    visitAllChildren(node);
+
+    emitter.emitEnd();
+
     return null;
   }
 
   @Override
   protected Void visitBlock(AST node) {
-    // TODO Auto-generated method stub
+    visitAllChildren(node);
     return null;
   }
 
@@ -127,6 +133,8 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
       emitter.emitResult(wtype);
     }
 
+    emitter.emitNewLine();
+
     AST funcBody = node.getChild(1);
     visit(funcBody);
 
@@ -137,6 +145,9 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
   @Override
   protected Void visitReturn(AST node) {
+    if (node.hasChild(0))
+      visit(node.getChild(0));
+
     emitter.emitReturn();
     return null;
   }
@@ -432,8 +443,10 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
   // *** HELPERS ***
 	private Void visitAllChildren(AST node) {
 		Iterator<AST> children = node.iterateChildren();
-		while(children.hasNext())
+		while(children.hasNext()) {
 			visit(children.next());
+      emitter.emitNewLine();
+    }
 		return null;
 	}
 

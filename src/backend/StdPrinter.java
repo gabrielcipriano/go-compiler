@@ -12,8 +12,18 @@ public class StdPrinter implements CodeOutput {
   }
 
   @Override
+  public void writef(String format, Object... args) {
+    System.out.printf(format, args);
+  }
+
+  @Override
   public void iwrite(String str) {
       System.out.print(idt + str);
+  }
+
+  @Override
+  public void iwritef(String format, Object... args) {
+    System.out.printf(idt + format, args);
   }
 
   @Override
@@ -22,8 +32,18 @@ public class StdPrinter implements CodeOutput {
   }
 
   @Override
+  public void writelnf(String format, Object... args) {
+    System.out.printf(format + "%n", args);
+  }
+
+  @Override
   public void iwriteln(String str) {
     System.out.println(idt + str);
+  }
+
+  @Override
+  public void iwritelnf(String format, Object... args) {
+    System.out.printf(idt + format + "%n", args);
   }
 
   @Override
@@ -35,5 +55,4 @@ public class StdPrinter implements CodeOutput {
   public void unindent() {
     this.idt.leftShift();
   }
-
 }
