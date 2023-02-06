@@ -3,11 +3,11 @@ package backend.commons;
 public class Indent {
   int size = 0;
 
-  void push() {
+  public void rightShift() {
     size += 2;
   }  
 
-  void pop() {
+  public void leftShift() {
     size -= 2;
   }
 

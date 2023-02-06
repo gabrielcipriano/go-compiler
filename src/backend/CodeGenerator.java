@@ -8,6 +8,7 @@ import backend.wasm.WasmType;
 import tables.FunctionTable;
 import tables.StrTable;
 import tables.VarTable;
+import typing.Type;
 
 import static backend.wasm.WasmType.f32;
 import static backend.wasm.WasmType.i32;
@@ -38,12 +39,12 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
   @Override
   protected Void visitShortVarDecl(AST node) {
-    int idx = node.getChild(0).intData;
+    int idx = node.getChild(0).intData; // do not visits var assign
     var entry = vt.get(idx);
     String label = entry.name;
 
     if (entry.isGlobal()) {
-      // TODO: atualmente, declaração de variaveis globais só suporta int e float literais
+      // TODO: atualmente, declaração de variaveis globais só suporta literais int e float
       var lit = node.getChild(1);
       emitter.emitGlobalDeclare(label, lit.isFloat() ? lit.floatData : lit.intData);
       return null;
@@ -91,7 +92,15 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
   @Override
   protected Void visitVarAssign(AST node) {
-    // TODO Auto-generated method stub
+    int idx = node.intData;
+    var entry = vt.get(idx);
+    String label = entry.name;
+
+    if (entry.isGlobal())
+      emitter.emitGlobalSet(label);
+    else
+      emitter.emitLocalSet(label);
+
     return null;
   }
 
@@ -102,7 +111,27 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
   @Override
   protected Void visitFuncDecl(AST node) {
-    // TODO Auto-generated method stub
+    int funcIdx = node.intData;
+    var entry = ft.get(funcIdx);
+    String funcLabel = entry.name;
+
+    emitter.emitFuncBegin(funcLabel);
+
+    AST funcParams = node.getChild(0);
+    visitFuncParams(funcParams);
+
+    if (entry.returns.size() > 0) {
+      var returnType = entry.returns.get(0);
+      var wtype = returnType == Type.FLOAT32_TYPE ? f32 : i32;
+
+      emitter.emitResult(wtype);
+    }
+
+    AST funcBody = node.getChild(1);
+    visit(funcBody);
+
+    emitter.emitEnd();
+
     return null;
   }
 
@@ -380,6 +409,24 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
     emitter.emitI2F();
     return null;
+  }
+
+  // *** CUSTOM VISITORS ***
+
+  /** the param node is actually a var_decl_list  */
+  protected void visitFuncParams(AST node) {
+    var children = node.iterateChildren();
+    while (children.hasNext()) {
+      var child = children.next();
+
+      int idx = child.intData;
+      var entry = vt.get(idx);
+      String varLabel = entry.name;
+
+      var wtype = entry.isFloat() ? f32 : i32;
+      
+      emitter.emitParam(wtype, varLabel);
+    }
   }
 
   // *** HELPERS ***

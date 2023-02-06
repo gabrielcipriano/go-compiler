@@ -5,12 +5,10 @@ import backend.commons.Indent;
 
 public class WasmEmitter {
   public final WasmLabels labels = new WasmLabels();
-  public final Indent idt = new Indent();
   public final CodeOutput out;
 
   public WasmEmitter(CodeOutput output) {
     this.out = output;
-    this.out.setIndent(idt);
   }
 
   public void emitComment(String comment) {
@@ -200,8 +198,29 @@ public class WasmEmitter {
   //   out.iwriteln("( " + label + ")");
   // }
 
+  // FUNCTION
+
+  public void emitFuncBegin(String label) {
+    out.iwrite("(func $" + label + " ");
+    out.indent();
+  }
+
+  public void emitParam(WasmType type, String label) {
+    out.write(String.format("(param $%s %s) ", label, type));
+  }
+
+  public void emitResult(WasmType type) {
+    out.write(String.format("(result %s)", type));
+  }
+
   public void emitReturn() {
     out.iwriteln("(return)");
+  }
+
+  /** after an instruction like "emitAbcBegin" you must emit an End at some point */
+  public void emitEnd() {
+    out.unindent();
+    out.iwriteln(")");
   }
 
 }

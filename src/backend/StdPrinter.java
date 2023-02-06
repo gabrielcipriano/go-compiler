@@ -4,7 +4,7 @@ import backend.commons.CodeOutput;
 import backend.commons.Indent;
 
 public class StdPrinter implements CodeOutput {
-  private Indent indent = new Indent(); // default indent (no indent)
+  private Indent idt = new Indent(); // default indent (no indent)
 
   @Override
   public void write(String str) {
@@ -13,7 +13,7 @@ public class StdPrinter implements CodeOutput {
 
   @Override
   public void iwrite(String str) {
-      System.out.print(indent + str);
+      System.out.print(idt + str);
   }
 
   @Override
@@ -23,14 +23,17 @@ public class StdPrinter implements CodeOutput {
 
   @Override
   public void iwriteln(String str) {
-    System.out.println(indent + str);
+    System.out.println(idt + str);
   }
 
   @Override
-  public void setIndent(Indent idt) {
-    this.indent = idt;
+  public void indent() {
+    this.idt.rightShift();
   }
 
-  
-  
+  @Override
+  public void unindent() {
+    this.idt.leftShift();
+  }
+
 }
