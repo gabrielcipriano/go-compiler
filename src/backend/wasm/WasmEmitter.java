@@ -1,7 +1,6 @@
 package backend.wasm;
 
 import backend.commons.CodeOutput;
-import backend.commons.Indent;
 
 public class WasmEmitter {
   public final WasmLabels labels = new WasmLabels();
@@ -24,7 +23,7 @@ public class WasmEmitter {
   }
 
   public void emitLocalDeclare(WasmType type, String label) {
-    out.iwriteln("(local $" + label + " " + type + ")");
+    out.iwritelnf("(local $%s %s)", label, type);
   }
 
   public void emitLocalGet(int idx) {
@@ -201,16 +200,16 @@ public class WasmEmitter {
   // FUNCTION
 
   public void emitFuncBegin(String label) {
-    out.iwrite("(func $" + label + " ");
+    out.iwritef("(func $%1$s (export \"%1$s\") ", label);
     out.indent();
   }
 
   public void emitParam(WasmType type, String label) {
-    out.write(String.format("(param $%s %s) ", label, type));
+    out.writef("(param $%s %s) ", label, type);
   }
 
   public void emitResult(WasmType type) {
-    out.write(String.format("(result %s)", type));
+    out.writef("(result %s)", type);
   }
 
   public void emitReturn() {
@@ -221,6 +220,33 @@ public class WasmEmitter {
   public void emitEnd() {
     out.unindent();
     out.iwriteln(")");
+    out.iwriteln("");
   }
 
+  /** calls the start function (usually main) */
+  public void emitStart(String label) {
+    out.iwriteln("(start $" + label + ")");
+  }
+
+  public void emitModuleBegin() {
+    out.iwriteln("(module ");
+    out.indent();
+  }
+
+  public void emitRuntimeSetup() {
+    emitComment("Importing std i/o");
+    String importFormat = "(import \"std\" \"%1$s\" (func $%1$s %2$s))";
+    out.iwritelnf(importFormat, RuntimeStd.printlnInt, "(param i32)");
+    out.iwritelnf(importFormat, RuntimeStd.printlnFloat, "(param f32)");
+    out.iwritelnf(importFormat, RuntimeStd.printlnString, "(param i32) (param i32)");
+    emitNewLine();
+    emitComment("exporting memory");
+    out.iwriteln("(memory $memory 1)");
+    out.iwriteln("(export \"memory\" (memory $memory))");
+    emitNewLine();
+  }
+
+  public void emitNewLine() {
+    out.iwriteln("");
+  }
 }
