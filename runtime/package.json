@@ -4,7 +4,8 @@
   "description": "a simple wasm runtime",
   "main": "runtime.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "wat-wasm": "wat2wasm ../wat/teste2.wat"
   },
   "keywords": [
     "wasm",
@@ -16,5 +17,8 @@
     "npm": "^9"
   },
   "author": "Cipriano",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "wat-wasm": "^1.0.43"
+  }
 }

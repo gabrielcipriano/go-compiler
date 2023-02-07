@@ -1,4 +1,5 @@
 const fs = require('fs');
+const wat_wasm = require('wat-wasm');
 
 let memory;
 
@@ -10,10 +11,10 @@ function printStrFromMemory(strStart, strSize) {
 
 const imports = {
   std: {
-    printLnInt: num => console.log(`${num}\n`),
-    printLnFloat: num => console.log(`${num}\n`),
-    printLnBoolean: num => console.log(`${Boolean(num)}\n`),
-    printLnStr: (strStart, strSize) => printStrFromMemory(strStart, strSize)
+    printlnInt: num => console.log(`${num}\n`),
+    printlnFloat: num => console.log(`${num}\n`),
+    printlnBoolean: num => console.log(`${Boolean(num)}\n`),
+    printlnString: (strStart, strSize) => printStrFromMemory(strStart, strSize)
   }
 }
 
