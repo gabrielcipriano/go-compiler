@@ -2,7 +2,7 @@ package main
 
 import "fmt"
 
-var a, b string
+var a, b string = "jesus", "maria"
 
 func main() {
 	var sum int = 0 + 1 + (4 * -2)
@@ -12,8 +12,10 @@ func main() {
 		c := "uau"
 	}
 
-	if false {
+	if sum > 5 {
 		c := "iupi"
+	} else {
+		c := "piui"
 	}
 
 	fmt.Println(a)

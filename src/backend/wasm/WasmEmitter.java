@@ -1,5 +1,7 @@
 package backend.wasm;
 
+import java.nio.ByteBuffer;
+
 import backend.commons.CodeOutput;
 
 public class WasmEmitter {
@@ -148,7 +150,7 @@ public class WasmEmitter {
   }
 
   public void emitDiv(WasmType type) {
-    out.iwriteln("(" + type + ".div)");
+    out.iwriteln("(" + type + ".div_s)");
   }
 
   public void emitI2F() {
@@ -277,7 +279,13 @@ public class WasmEmitter {
   }
 
   public void emitInt32Data(int offset, int value) {
-    out.iwritelnf("(data(i32.const %d) %d)", offset, value);
+    // converting i32 value to byte string
+    var bytes = ByteBuffer.allocate(4).putInt(value).array();
+    String byteString = "";
+    for (byte _byte : bytes)
+      byteString = new String("\\0" + (_byte & 0xFF)) + byteString;
+
+    out.iwritelnf("(data(i32.const %d) \"%s\")", offset, byteString);
   }
 
   /** calls the start function (usually main) */

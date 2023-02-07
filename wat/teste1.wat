@@ -1,14 +1,13 @@
 (module
-  (import "std" "println_int" (func $println_int (param i32)))
-  (import "std" "_print" (func $_print (param i32) (param i32)))
-  (import "std" "_println" (func $_println (param i32) (param i32)))
+  (import "std" "printLnInt" (func $printLnInt (param i32)))
+  (import "std" "printLnStr" (func $printLnStr (param i32) (param i32)))
 
-  (export "memory" (memory $mem))
   (memory $mem 1)
+  (export "memory" (memory $mem))
 
-  (func $addTwo (export "addTwo") (param i32 i32 ) (result i32)
-    local.get 0
-    local.get 1
+  (func $addTwo (export "addTwo") (param $a i32) (param $b i32) (result i32)
+    local.get $a
+    local.get $b
     i32.add
   )
 
@@ -16,16 +15,21 @@
 
   (data (i32.const 5) " World")
 
-  (func (export "main")
+  (data (i32.const 11) 123456)
+
+  (func $main (export "main")
     i32.const 3
     i32.const 2
     call $addTwo
-    call $println_int
+    call $printLnInt
     i32.const 0
-    i32.const 5
-    call $_print
-    i32.const 5
-    i32.const 6
-    call $_println
+    i32.const 11
+    call $printLnStr
+    ;; i32.const 0
+    ;; i32.const 5
+    ;; call $_print
+    ;; i32.const 5
+    ;; i32.const 6
+    ;; call $_println
   )
 )
