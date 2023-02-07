@@ -1,5 +1,4 @@
 const fs = require('fs');
-const wat_wasm = require('wat-wasm');
 
 let memory;
 

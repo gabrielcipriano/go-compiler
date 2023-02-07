@@ -39,6 +39,14 @@ public final class VarTable {
 		return table.get(i);
 	}
 
+	public List<VarEntry> filterByFuncId(int funcId) {
+		List<VarEntry> localVars = new ArrayList<VarEntry>();
+		for (VarEntry _var : table)
+			if (_var.funcId == funcId)
+				localVars.add(_var);
+		return localVars;
+	}
+
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		Formatter f = new Formatter(sb);

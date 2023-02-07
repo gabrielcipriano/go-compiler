@@ -12,7 +12,7 @@
   ;; declaring aux vars
   (global $aux_i32 (mut i32) (i32.const 0))
   (global $aux_f32 (mut f32) (f32.const 0.000000))
-  
+    
   ;;  adding strings to memory
   (data(i32.const 0) "\07\00\00\00") ;; str size
   (data(i32.const 4) "gabriel")

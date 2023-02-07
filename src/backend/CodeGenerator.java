@@ -7,6 +7,7 @@ import backend.wasm.WasmEmitter;
 import backend.wasm.WasmType;
 import tables.FunctionTable;
 import tables.StrTable;
+import tables.VarEntry;
 import tables.VarTable;
 import typing.Type;
 
@@ -42,7 +43,7 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
     emitter.emitModuleBegin();
       emitter.emitRuntimeSetup();
 
-      emitter.emitComment(" adding strings to memory");
+      emitter.emitComment("adding strings to memory");
       int offSet = 0;
       var strings = st.iterator();
       while(strings.hasNext()){
@@ -65,14 +66,16 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
   @Override
   protected Void visitAssign(AST node) {
-    // int idx = node.getChild(0).intData; // do not visits var assign
-    // var entry = vt.get(idx);
-    // String label = entry.name;
-    // if (entry.isGlobal()) {
-    //   // TODO: funcao para atribuir esses valores?
-    // }
-    // visit(node.getChild(1));
-    // emitter.emitLocalSet(label);
+    int idx = node.getChild(0).intData; // do not visits var assign
+    var entry = vt.get(idx);
+    String label = getLabel(entry);
+
+    visit(node.getChild(1)); // stacks expr result
+
+    if (entry.isGlobal())
+      emitter.emitGlobalSet(label);
+    else
+      emitter.emitLocalSet(label);
     return null;
   }
 
@@ -80,7 +83,7 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
   protected Void visitShortVarDecl(AST node) {
     int idx = node.getChild(0).intData; // do not visits var assign
     var entry = vt.get(idx);
-    String label = entry.name;
+    String label = getLabel(entry);
 
     if (entry.isGlobal()) {
       // TODO: atualmente, declaração de variaveis globais só suporta literais int e float
@@ -94,7 +97,8 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
       return null;
     }
 
-    emitter.emitLocalDeclare(entry.isFloat() ? f32 : i32, label);
+    // local var already hoisted by funcDeclare
+    // emitter.emitLocalDeclare(entry.isFloat() ? f32 : i32, label);
     
     visit(node.getChild(1));
     emitter.emitLocalSet(label);
@@ -116,15 +120,15 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
   protected Void visitVarDecl(AST node) {
     int idx = node.intData;
     var entry = vt.get(idx);
-    String label = entry.name;
+    String label = getLabel(entry);
 
     if (entry.isGlobal())
       if (entry.isFloat())
         emitter.emitGlobalDeclare(label,0.0f);
       else
         emitter.emitGlobalDeclare(label, 0);
-    else
-      emitter.emitLocalDeclare(entry.isFloat() ? f32 : i32, label);
+    // else // does nothing because of var hoisting in func declaration
+      // emitter.emitLocalDeclare(entry.isFloat() ? f32 : i32, label);
     
     return null;
   }
@@ -133,7 +137,7 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
   protected Void visitVarAssign(AST node) {
     int idx = node.intData;
     var entry = vt.get(idx);
-    String label = entry.name;
+    String label = getLabel(entry);
 
     if (entry.isGlobal())
       emitter.emitGlobalSet(label);
@@ -163,6 +167,16 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
         var wtype = returnType == Type.FLOAT32_TYPE ? f32 : i32;
 
         emitter.emitResult(wtype);
+      }
+
+      emitter.emitNewLine();
+
+      var localVars = vt.filterByFuncId(entry.id);
+      // declares local vars ignoring params
+      for (int i = entry.params.size(); i < localVars.size(); i++) {
+        var localVar = localVars.get(i);
+        // hoisting
+        emitter.emitLocalDeclare(localVar.isFloat() ? f32 : i32, getLabel(localVar));
       }
 
       emitter.emitNewLine();
@@ -224,13 +238,15 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
     }
     else condition = clause.getChild(0);
     visit(condition);
+
     emitter.emitEqz();
     emitter.emitBrIf(blockLabel);
     emitter.emitFor(forLabel);
+
     visit(node.getChild(1));
-    if(clause.hasChild(2)){
+    if(clause.hasChild(2))
       visit(clause.getChild(2));
-    }
+
     visit(condition);
     emitter.emitBrIf(forLabel);
     emitter.emitEnd();
@@ -248,7 +264,7 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
   protected Void visitIncrement(AST node) {
     int idx = node.getChild(0).intData; // do not visits var assign
     var entry = vt.get(idx);
-    String label = entry.name;
+    String label = getLabel(entry);
 
     if (entry.isGlobal()) {
       emitter.emitGlobalGet(label);
@@ -268,7 +284,7 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
   protected Void visitDecrement(AST node) {
     int idx = node.getChild(0).intData; // do not visits var assign
     var entry = vt.get(idx);
-    String label = entry.name;
+    String label = getLabel(entry);
 
     if (entry.isGlobal()) {
       emitter.emitGlobalGet(label);
@@ -282,7 +298,6 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
     emitter.emitSub(i32);
     emitter.emitLocalSet(label);
     return null;
-
   }
 
   @Override
@@ -360,7 +375,7 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
   protected Void visitVarUse(AST node) {
     int idx = node.intData;
     var entry = vt.get(idx);
-    String label = entry.name;
+    String label = getLabel(entry);
   
     if (entry.isGlobal())
       emitter.emitGlobalGet(label);
@@ -383,7 +398,7 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
   @Override
   protected Void visitMinus(AST node) {
-    WasmType type = node.getChild(0).isInt() ? i32 : f32;
+    WasmType type = node.getChild(0).isFloat() ? f32 : i32;
   
     if (!node.hasChild(1)) { // unary
       // "0 - value" inverts signal
@@ -403,7 +418,7 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
   @Override
   protected Void visitPlus(AST node) {
-    WasmType type = node.getChild(0).isInt() ? i32 : f32;
+    WasmType type = node.getChild(0).isFloat() ? f32 : i32;
   
     if (!node.hasChild(1))// unary
       return null;
@@ -417,7 +432,7 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
   @Override
   protected Void visitDiv(AST node) {
-    WasmType type = node.getChild(0).isInt() ? i32 : f32;
+    WasmType type = node.getChild(0).isFloat() ? f32 : i32;
 
     visit(node.getChild(0));
     visit(node.getChild(1));
@@ -428,7 +443,7 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
   @Override
   protected Void visitTimes(AST node) {
-    WasmType type = node.getChild(0).isInt() ? i32 : f32;
+    WasmType type = node.getChild(0).isFloat() ? f32 : i32;
 
     visit(node.getChild(0));
     visit(node.getChild(1));
@@ -439,7 +454,7 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
   @Override
   protected Void visitLess(AST node) {
-    WasmType type = node.getChild(0).isInt() ? i32 : f32;
+    WasmType type = node.getChild(0).isFloat() ? f32 : i32;
 
     visit(node.getChild(0));
     visit(node.getChild(1));
@@ -450,7 +465,7 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
   @Override
   protected Void visitLessEqual(AST node) {
-    WasmType type = node.getChild(0).isInt() ? i32 : f32;
+    WasmType type = node.getChild(0).isFloat() ? f32 : i32;
 
     visit(node.getChild(0));
     visit(node.getChild(1));
@@ -461,7 +476,7 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
   @Override
   protected Void visitGreaterEqual(AST node) {
-    WasmType type = node.getChild(0).isInt() ? i32 : f32;
+    WasmType type = node.getChild(0).isFloat() ? f32 : i32;
 
     visit(node.getChild(0));
     visit(node.getChild(1));
@@ -472,7 +487,7 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
   @Override
   protected Void visitGreater(AST node) {
-    WasmType type = node.getChild(0).isInt() ? i32 : f32;
+    WasmType type = node.getChild(0).isFloat() ? f32 : i32;
 
     visit(node.getChild(0));
     visit(node.getChild(1));
@@ -549,11 +564,9 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
       int idx = child.intData;
       var entry = vt.get(idx);
-      String varLabel = entry.name;
-
-      var wtype = entry.isFloat() ? f32 : i32;
+      String varLabel = getLabel(entry);
       
-      emitter.emitParam(wtype, varLabel);
+      emitter.emitParam(entry.isFloat() ? f32 : i32, varLabel);
     }
   }
 
@@ -567,5 +580,9 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
     }
 		return null;
 	}
+
+  String getLabel(VarEntry entry) {
+    return String.format("%02d", entry.index) + "_" + entry.name;
+  }
 
 }

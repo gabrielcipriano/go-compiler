@@ -5,7 +5,8 @@
   "main": "runtime.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "wat-wasm": "wat2wasm ../wat/teste2.wat"
+    "exec": "node runtime.js",
+    "compile": "wat2wasm"
   },
   "keywords": [
     "wasm",
