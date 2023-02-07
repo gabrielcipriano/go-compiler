@@ -12,6 +12,7 @@ const imports = {
   std: {
     printLnInt: num => console.log(`${num}\n`),
     printLnFloat: num => console.log(`${num}\n`),
+    printLnBoolean: num => console.log(`${Boolean(num)}\n`),
     printLnStr: (strStart, strSize) => printStrFromMemory(strStart, strSize)
   }
 }
@@ -19,7 +20,6 @@ const imports = {
 async function instantiateWasmFile(imports) {
   const path = process.argv[2];
 
-  console.info("loading wasm file: " + path);
   if (!path)
     throw new Error("Please provide a wasm file as argument");
 

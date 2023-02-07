@@ -5,6 +5,7 @@ import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 
+import backend.CodeGenerator;
 import parser.GOLexer;
 import parser.GOParser;
 import checker.SemanticChecker;
@@ -61,9 +62,14 @@ public class Main {
 		checker.printTables();
 		checker.printAST();
 
-		System.out.println("*** RUNNING ***\n");
+		// System.out.println("*** RUNNING ***\n");
 	
-		Interpreter interpreter = new Interpreter(checker.st, checker.vt, checker.ft);
-		interpreter.execute(checker.getAST());
+		// Interpreter interpreter = new Interpreter(checker.st, checker.vt, checker.ft);
+		// interpreter.execute(checker.getAST());
+
+		System.out.println("*** EMMITING CODE ***\n");
+	
+		CodeGenerator codeGenerator = new CodeGenerator(checker.st, checker.vt, checker.ft);
+		codeGenerator.execute(checker.getAST());
 	}
 }

@@ -40,19 +40,19 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
   @Override
   protected Void visitProgram(AST node) {
     emitter.emitModuleBegin();
-    emitter.emitRuntimeSetup();
+      emitter.emitRuntimeSetup();
+      emitter.emitComment(" adding strings to memory");
+      int offSet = 0;
+      var strings = st.iterator();
+      while(strings.hasNext()){
+        String str = strings.next();
+        strOffsets.add(offSet);
+        emitter.emitStringData(offSet, str);
+        offSet += str.length() - 2;
+      }
+      emitter.emitNewLine();
 
-    int offSet = 0;
-    var strings = st.iterator();
-    while(strings.hasNext()){
-      String str = strings.next();
-      strOffsets.add(offSet);
-      emitter.emitStringData(offSet, str);
-      offSet += str.length() - 2;
-    }
-
-    visitAllChildren(node);
-
+      visitAllChildren(node);
     emitter.emitEnd();
 
     return null;
@@ -60,14 +60,14 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
   @Override
   protected Void visitAssign(AST node) {
-    int idx = node.getChild(0).intData; // do not visits var assign
-    var entry = vt.get(idx);
-    String label = entry.name;
-    if (entry.isGlobal()) {
-      // TODO: funcao para atribuir esses valores?
-    }
-    visit(node.getChild(1));
-    emitter.emitLocalSet(label);
+    // int idx = node.getChild(0).intData; // do not visits var assign
+    // var entry = vt.get(idx);
+    // String label = entry.name;
+    // if (entry.isGlobal()) {
+    //   // TODO: funcao para atribuir esses valores?
+    // }
+    // visit(node.getChild(1));
+    // emitter.emitLocalSet(label);
     return null;
   }
 
@@ -148,22 +148,20 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
     String funcLabel = entry.name;
 
     emitter.emitFuncBegin(funcLabel);
+      AST funcParams = node.getChild(0);
+      visitFuncParams(funcParams);
 
-    AST funcParams = node.getChild(0);
-    visitFuncParams(funcParams);
+      if (entry.returns.size() > 0) {
+        var returnType = entry.returns.get(0);
+        var wtype = returnType == Type.FLOAT32_TYPE ? f32 : i32;
 
-    if (entry.returns.size() > 0) {
-      var returnType = entry.returns.get(0);
-      var wtype = returnType == Type.FLOAT32_TYPE ? f32 : i32;
+        emitter.emitResult(wtype);
+      }
 
-      emitter.emitResult(wtype);
-    }
+      emitter.emitNewLine();
 
-    emitter.emitNewLine();
-
-    AST funcBody = node.getChild(1);
-    visit(funcBody);
-
+      AST funcBody = node.getChild(1);
+      visit(funcBody);
     emitter.emitEnd();
 
     return null;
@@ -180,12 +178,14 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
   @Override
   protected Void visitIf(AST node) {
-    visit(node.getChild(0));
-    emitter.emitIf();
-    visit(node.getChild(1));
-    emitter.emitEndIf();
-    if(node.hasChild(2))  
-      visit(node.getChild(2));
+    visit(node.getChild(0)); // if clause
+    emitter.emitIfBegin();
+      emitter.emitThenBegin();
+        visit(node.getChild(1)); // if block
+      emitter.emitEnd();
+      if(node.hasChild(2)) // has else block
+        visit(node.getChild(2));
+    emitter.emitEnd();
     return null;
   }
 
@@ -197,9 +197,9 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
   @Override
   protected Void visitElse(AST node) {
-      emitter.emitElse();
+    emitter.emitElseBegin();
       visit(node.getChild(0));
-      emitter.emitEnd();
+    emitter.emitEnd();
     return null;
   }
 
@@ -361,7 +361,10 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
   
     if (!node.hasChild(1)) { // unary
       // "0 - value" inverts signal
-      emitter.emitConst(type == i32 ? 0 : 0.0f);
+      if (type == i32)
+        emitter.emitConst(0);
+      else
+        emitter.emitConst(0.0f);
       visit(node.getChild(0));
     } else {
       visit(node.getChild(0));
@@ -533,7 +536,8 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 		Iterator<AST> children = node.iterateChildren();
 		while(children.hasNext()) {
 			visit(children.next());
-      emitter.emitNewLine();
+      if(children.hasNext())
+        emitter.emitNewLine();
     }
 		return null;
 	}

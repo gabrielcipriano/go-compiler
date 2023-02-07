@@ -138,18 +138,17 @@ public class WasmEmitter {
     emitEnd();
   }
 
-  private void emitThen(){
+  public void emitThenBegin(){
     out.iwriteln("(then");
     out.indent();
   }
 
-  public void emitIf(){
+  public void emitIfBegin(){
     out.iwriteln("(if");
     out.indent();
-    emitThen();
   }
 
-  public void emitElse(){
+  public void emitElseBegin(){
     out.iwriteln("(else");
     out.indent();
   }
