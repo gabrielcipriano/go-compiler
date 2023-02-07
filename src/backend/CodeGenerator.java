@@ -13,7 +13,9 @@ import typing.Type;
 import static backend.wasm.WasmType.f32;
 import static backend.wasm.WasmType.i32;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 public class CodeGenerator extends ASTBaseVisitor<Void> {
   private final FunctionTable ft;
@@ -22,6 +24,10 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
   private final CodeOutput output = new StdPrinter();
   private final WasmEmitter emitter;
+
+  private int forCount = 0;
+
+  private final List<Integer> strOffsets = new ArrayList<Integer>();
 
   public CodeGenerator(StrTable st, VarTable vt, FunctionTable ft) {
     this.st = st;
@@ -32,8 +38,36 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
   }
 
   @Override
+  protected Void visitProgram(AST node) {
+    emitter.emitModuleBegin();
+    emitter.emitRuntimeSetup();
+
+    int offSet = 0;
+    var strings = st.iterator();
+    while(strings.hasNext()){
+      String str = strings.next();
+      strOffsets.add(offSet);
+      emitter.emitStringData(offSet, str);
+      offSet += str.length() - 2;
+    }
+
+    visitAllChildren(node);
+
+    emitter.emitEnd();
+
+    return null;
+  }
+
+  @Override
   protected Void visitAssign(AST node) {
-    // TODO Auto-generated method stub
+    int idx = node.getChild(0).intData; // do not visits var assign
+    var entry = vt.get(idx);
+    String label = entry.name;
+    if (entry.isGlobal()) {
+      // TODO: funcao para atribuir esses valores?
+    }
+    visit(node.getChild(1));
+    emitter.emitLocalSet(label);
     return null;
   }
 
@@ -46,35 +80,24 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
     if (entry.isGlobal()) {
       // TODO: atualmente, declaração de variaveis globais só suporta literais int e float
       var lit = node.getChild(1);
-      emitter.emitGlobalDeclare(label, lit.isFloat() ? lit.floatData : lit.intData);
+      if (lit.isFloat())
+        emitter.emitGlobalDeclare(label, lit.floatData);
+      else
+        emitter.emitGlobalDeclare(label, lit.intData);
       return null;
     }
 
     emitter.emitLocalDeclare(entry.isFloat() ? f32 : i32, label);
     
     visit(node.getChild(1));
-
     emitter.emitLocalSet(label);
     
     return null;
   }
 
   @Override
-  protected Void visitProgram(AST node) {
-    emitter.emitModuleBegin();
-    emitter.emitRuntimeSetup();
-
-    visitAllChildren(node);
-
-    emitter.emitEnd();
-
-    return null;
-  }
-
-  @Override
   protected Void visitBlock(AST node) {
-    visitAllChildren(node);
-    return null;
+    return visitAllChildren(node);
   }
 
   @Override
@@ -89,7 +112,10 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
     String label = entry.name;
 
     if (entry.isGlobal())
-      emitter.emitGlobalDeclare(label, entry.isFloat() ? 0.0f : 0);
+      if (entry.isFloat())
+        emitter.emitGlobalDeclare(label,0.0f);
+      else
+        emitter.emitGlobalDeclare(label, 0);
     else
       emitter.emitLocalDeclare(entry.isFloat() ? f32 : i32, label);
     
@@ -154,25 +180,54 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
   @Override
   protected Void visitIf(AST node) {
-    // TODO Auto-generated method stub
+    visit(node.getChild(0));
+    emitter.emitIf();
+    visit(node.getChild(1));
+    emitter.emitEndIf();
+    if(node.hasChild(2))  
+      visit(node.getChild(2));
     return null;
   }
 
   @Override
   protected Void visitIfClause(AST node) {
-    // TODO Auto-generated method stub
+    visitAllChildren(node);
     return null;
   }
 
   @Override
   protected Void visitElse(AST node) {
-    // TODO Auto-generated method stub
+      emitter.emitElse();
+      visit(node.getChild(0));
+      emitter.emitEnd();
     return null;
   }
 
   @Override
   protected Void visitFor(AST node) {
-    // TODO Auto-generated method stub
+    String blockLabel = "BLOCK_"+forCount;
+    String forLabel = "FOR_"+forCount;
+    forCount++;
+    emitter.emitBlock(blockLabel);
+    AST clause = node.getChild(0);
+    AST condition;
+    if(clause.hasChild(1)){
+      visit(clause.getChild(0));
+      condition = clause.getChild(1);
+    }
+    else condition = clause.getChild(0);
+    visit(condition);
+    emitter.emitEqz();
+    emitter.emitBrIf(blockLabel);
+    emitter.emitFor(forLabel);
+    visit(node.getChild(1));
+    if(clause.hasChild(2)){
+      visit(clause.getChild(2));
+    }
+    visit(condition);
+    emitter.emitBrIf(forLabel);
+    emitter.emitEnd();
+    emitter.emitEnd();
     return null;
   }
 
@@ -184,14 +239,43 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
   @Override
   protected Void visitIncrement(AST node) {
-    // TODO Auto-generated method stub
+    int idx = node.getChild(0).intData; // do not visits var assign
+    var entry = vt.get(idx);
+    String label = entry.name;
+
+    if (entry.isGlobal()) {
+      emitter.emitGlobalGet(label);
+      emitter.emitConst(1);
+      emitter.emitAdd(i32);
+      emitter.emitGlobalSet(label);
+      return null;
+    }
+    emitter.emitLocalGet(label);
+    emitter.emitConst(1);
+    emitter.emitAdd(i32);
+    emitter.emitLocalSet(label);
     return null;
   }
 
   @Override
   protected Void visitDecrement(AST node) {
-    // TODO Auto-generated method stub
+    int idx = node.getChild(0).intData; // do not visits var assign
+    var entry = vt.get(idx);
+    String label = entry.name;
+
+    if (entry.isGlobal()) {
+      emitter.emitGlobalGet(label);
+      emitter.emitConst(1);
+      emitter.emitSub(i32);
+      emitter.emitGlobalGet(label);
+      return null;
+    }
+    emitter.emitLocalGet(label);
+    emitter.emitConst(1);
+    emitter.emitSub(i32);
+    emitter.emitLocalSet(label);
     return null;
+
   }
 
   @Override
@@ -232,7 +316,11 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
   @Override
   protected Void visitStrLit(AST node) {
-    // TODO lidar com string literals
+    int strIdx = node.intData;
+    var strOffset = strOffsets.get(strIdx);
+
+    emitter.emitConst(strOffset);
+
     return null;
   }
 

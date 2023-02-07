@@ -133,6 +133,37 @@ public class WasmEmitter {
     out.iwriteln("(f32.convert_i32_s)");
   }
 
+  public void emitEndIf(){
+    emitEnd();
+    emitEnd();
+  }
+
+  private void emitThen(){
+    out.iwriteln("(then");
+    out.indent();
+  }
+
+  public void emitIf(){
+    out.iwriteln("(if");
+    out.indent();
+    emitThen();
+  }
+
+  public void emitElse(){
+    out.iwriteln("(else");
+    out.indent();
+  }
+
+  public void emitBlock(String label){
+    out.iwritelnf("(block $%S",label);
+    out.indent();
+  }
+  public void emitFor(String label){
+    out.iwritelnf("(loop $%S",label);
+    out.indent();
+  }
+
+
   public void emitLess(WasmType type) {
     out.iwriteln("(" + type + ".lt_s)");
   }
@@ -220,6 +251,10 @@ public class WasmEmitter {
     out.iwriteln(")");
   }
 
+  public void emitStringData(int offSet, String str){
+    out.iwritelnf("(data(i32.const %d) %s)", offSet, str);
+  }
+
   /** calls the start function (usually main) */
   public void emitStart(String label) {
     out.iwriteln("(start $" + label + ")");
@@ -234,10 +269,11 @@ public class WasmEmitter {
     emitComment("Importing std i/o");
     String importFormat = "(import \"std\" \"%1$s\" (func $%1$s %2$s))";
     out.iwritelnf(importFormat, RuntimeStd.printlnInt, "(param i32)");
+    out.iwritelnf(importFormat, RuntimeStd.printlnBoolean, "(param i32)");
     out.iwritelnf(importFormat, RuntimeStd.printlnFloat, "(param f32)");
     out.iwritelnf(importFormat, RuntimeStd.printlnString, "(param i32) (param i32)");
     emitNewLine();
-    emitComment("exporting memory");
+    emitComment("creating and exporting memory");
     out.iwriteln("(memory $memory 1)");
     out.iwriteln("(export \"memory\" (memory $memory))");
     emitNewLine();
