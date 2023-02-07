@@ -79,7 +79,7 @@ public class WasmEmitter {
 
   /** global auxiliar var for temporary values.
    * tee instruction sets the value of a local variable and loads the value onto the stack */
-  public void emitAuxTee(String type) {
+  public void emitAuxTee(WasmType type) {
     String label = "aux_" + type;
     emitGlobalTee(label);
   }
@@ -109,6 +109,28 @@ public class WasmEmitter {
   /** function call */
   public void emitCall(String funcLabel) {
     out.iwriteln("(call $" + funcLabel + ")");
+  }
+
+  public void emitPrintlnInt() {
+    emitCall(RuntimeStd.printlnInt.toString());
+  }
+
+  public void emitPrintlnFloat() {
+    emitCall(RuntimeStd.printlnFloat.toString());
+  }
+
+  public void emitPrintlnBoolean() {
+    emitCall(RuntimeStd.printlnBoolean.toString());
+  }
+
+  public void emitPrintlnString() {
+    emitComment("prints string geting the size & moving offset");
+    emitAuxTee(WasmType.i32);
+    emitConst(4);
+    emitAdd(WasmType.i32);
+    emitAuxGet(WasmType.i32);
+    emitLoad(WasmType.i32);
+    emitCall(RuntimeStd.printlnString.toString());
   }
 
   // OPERATIONS
@@ -250,8 +272,12 @@ public class WasmEmitter {
     out.iwriteln(")");
   }
 
-  public void emitStringData(int offSet, String str){
-    out.iwritelnf("(data(i32.const %d) %s)", offSet, str);
+  public void emitStringData(int offset, String str) {
+    out.iwritelnf("(data(i32.const %d) %s)", offset, str);
+  }
+
+  public void emitInt32Data(int offset, int value) {
+    out.iwritelnf("(data(i32.const %d) %d)", offset, value);
   }
 
   /** calls the start function (usually main) */
@@ -272,9 +298,15 @@ public class WasmEmitter {
     out.iwritelnf(importFormat, RuntimeStd.printlnFloat, "(param f32)");
     out.iwritelnf(importFormat, RuntimeStd.printlnString, "(param i32) (param i32)");
     emitNewLine();
+
     emitComment("creating and exporting memory");
     out.iwriteln("(memory $memory 1)");
     out.iwriteln("(export \"memory\" (memory $memory))");
+    emitNewLine();
+
+    emitComment("declaring aux vars");
+    emitGlobalDeclare("aux_" + WasmType.i32, 0);
+    emitGlobalDeclare("aux_" + WasmType.f32, 0.0f);
     emitNewLine();
   }
 

@@ -41,15 +41,20 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
   protected Void visitProgram(AST node) {
     emitter.emitModuleBegin();
       emitter.emitRuntimeSetup();
+
       emitter.emitComment(" adding strings to memory");
       int offSet = 0;
       var strings = st.iterator();
       while(strings.hasNext()){
         String str = strings.next();
+        int strSz = str.length()-2; // ignore quotes
         strOffsets.add(offSet);
+        emitter.emitInt32Data(offSet, strSz);
+        offSet += 4; // i32 = 4bytes
         emitter.emitStringData(offSet, str);
-        offSet += str.length() - 2;
+        offSet += strSz;
       }
+      emitter.emitGlobalDeclare("offset", offSet);
       emitter.emitNewLine();
 
       visitAllChildren(node);
@@ -82,6 +87,8 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
       var lit = node.getChild(1);
       if (lit.isFloat())
         emitter.emitGlobalDeclare(label, lit.floatData);
+      else if (lit.isString())
+        emitter.emitGlobalDeclare(label, strOffsets.get(lit.intData));
       else
         emitter.emitGlobalDeclare(label, lit.intData);
       return null;
@@ -286,7 +293,26 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
   @Override
   protected Void visitPrint(AST node) {
-    // TODO Auto-generated method stub
+    var expressions = node.iterateChildren();
+    while(expressions.hasNext()) {
+      var expr = expressions.next();
+      visit(expr);
+
+      switch (expr.type) {
+        case FLOAT32_TYPE:
+          emitter.emitPrintlnFloat();
+          break;
+        case BOOLEAN_TYPE:
+          emitter.emitPrintlnBoolean();
+          break;
+        case STRING_TYPE:
+          emitter.emitPrintlnString();
+          break;
+        case INT_TYPE:
+        default:
+          emitter.emitPrintlnInt();
+      }
+    }
     return null;
   }
 
