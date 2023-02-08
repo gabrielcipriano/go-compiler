@@ -4,7 +4,6 @@
   (import "std" "printlnBoolean" (func $printlnBoolean (param i32)))
   (import "std" "printlnFloat" (func $printlnFloat (param f32)))
   (import "std" "printlnString" (func $printlnString (param i32) (param i32)))
-  (import "random" "randInt" (func $randInt (param i32) (result i32)))
   
   ;; creating and exporting memory
   (memory $memory 1)
@@ -12,22 +11,25 @@
   
   ;; declaring aux vars
   (global $aux_i32 (mut i32) (i32.const 0))
-  (global $aux_f32 (mut f32) (f32.const 0.000000))
+  (global $aux_f32 (mut f32) (f32.const 0,000000))
   
   ;; adding strings to memory
-  (data(i32.const 0) "Fibonacci sequence:")
-  (data(i32.const 19) "Last fibonacci before limit:")
-  (global $offset (mut i32) (i32.const 47))
+  (data(i32.const 0) "\019\00\00\00")
+  (data(i32.const 4) "Fibonacci sequence:")
+  (data(i32.const 23) "\028\00\00\00")
+  (data(i32.const 27) "Last fibonacci before limit:")
+  (global $offset (mut i32) (i32.const 55))
   
   (func $fibonacciIterativo (export "fibonacciIterativo") (param $00_a i32) (param $01_b i32) (param $02_limit i32) (result i32)    
     (local $03_next i32)
-  
+    
+    
     (block $BLOCK_0
       (local.get $01_b)
       (local.get $02_limit)
       (i32.le_s)
       (i32.eqz)
-      (br_if $BLOCK_0)
+      (br_if BLOCK_0)
       (loop $FOR_0
         (local.get $00_a)
         (call $printlnInt)
@@ -45,7 +47,7 @@
         (local.get $01_b)
         (local.get $02_limit)
         (i32.le_s)
-        (br_if $FOR_0)
+        (br_if FOR_0)
       )
     )
     
@@ -59,7 +61,13 @@
   (func $fibonacciSequence (export "fibonacciSequence") (param $04_limit i32) (result i32)    
     
     (i32.const 0)
-    (i32.const 19)
+    ;; prints string geting the size & moving offset
+    (global.set $aux_i32)
+    (global.get $aux_i32)
+    (i32.const 4)
+    (i32.add)
+    (global.get $aux_i32)
+    (i32.load)
     (call $printlnString)
     
     (i32.const 0)
@@ -78,8 +86,14 @@
     (call $fibonacciSequence)
     (local.set $05_lastFibonacci)
     
-    (i32.const 19)
-    (i32.const 28)
+    (i32.const 23)
+    ;; prints string geting the size & moving offset
+    (global.set $aux_i32)
+    (global.get $aux_i32)
+    (i32.const 4)
+    (i32.add)
+    (global.get $aux_i32)
+    (i32.load)
     (call $printlnString)
     (local.get $05_lastFibonacci)
     (call $printlnInt)

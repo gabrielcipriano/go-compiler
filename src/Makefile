@@ -3,7 +3,7 @@ JAVAC=javac
 # Comando da JVM
 JAVA=java
 # ROOT é a raiz dos diretórios com todos os roteiros de laboratórios
-ROOT=/home/rtfsmonteiro/Documents/go-compiler
+ROOT=/home/ryan/Documents/2022-2/Compiladores/go-compiler
 # Caminho para o JAR do ANTLR em labs/tools
 ANTLR_PATH=$(ROOT)/tools/antlr-4.11.1-complete.jar
 # Opção de configuração do CLASSPATH para o ambiente Java
