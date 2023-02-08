@@ -57,18 +57,26 @@ public class Main {
 		SemanticChecker checker = new SemanticChecker();
 		checker.visit(tree);
 
-		// Saída final. Se chegou até aqui é porque não houve erro.
-		System.out.println("PARSE SUCCESSFUL!");
-		checker.printTables();
-		checker.printAST();
-
-		// System.out.println("*** RUNNING ***\n");
+		String debug = System.getenv().get("DEBUG") == null ? "false" : System.getenv().get("DEBUG");
+		boolean isDebugging = debug.equals("true") || debug.equals("1");
 	
-		// Interpreter interpreter = new Interpreter(checker.st, checker.vt, checker.ft);
-		// interpreter.execute(checker.getAST());
+		if(isDebugging) {
 
-		System.out.println("*** EMMITING CODE ***\n");
+			// Saída final. Se chegou até aqui é porque não houve erro.
+			System.out.println("PARSE SUCCESSFUL!");
+
+			// Imprime as tabelas de símbolos.
+			checker.printTables();
+			checker.printAST();
+
+			// System.out.println("*** RUNNING ***\n");
 	
+			// Interpreter interpreter = new Interpreter(checker.st, checker.vt, checker.ft);
+			// interpreter.execute(checker.getAST());
+
+			System.out.println("*** EMMITING CODE ***\n");
+		}
+
 		CodeGenerator codeGenerator = new CodeGenerator(checker.st, checker.vt, checker.ft);
 		codeGenerator.execute(checker.getAST());
 	}

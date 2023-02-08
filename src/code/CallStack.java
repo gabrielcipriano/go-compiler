@@ -41,7 +41,7 @@ public class CallStack extends ArrayDeque<StackFrame>{
       new StackFrame(this.ft.get(funcId), params, vt, memory, this.getGlobalAddressMap())
     );
 
-		String debug = System.getenv().get("DEBUG");
+		String debug = System.getenv().get("DEBUG") == null ? "false" : System.getenv().get("DEBUG");
 		boolean isDebugging = debug.equals("true") || debug.equals("1");
     if (isDebugging)
       System.out.println(this.getLast().toString());
