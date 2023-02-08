@@ -10,9 +10,9 @@ function printStrFromMemory(strStart, strSize) {
 
 const imports = {
   std: {
-    printlnInt: num => console.log(`${num}\n`),
-    printlnFloat: num => console.log(`${num}\n`),
-    printlnBoolean: num => console.log(`${Boolean(num)}\n`),
+    printlnInt: num => console.log(`${num}`),
+    printlnFloat: num => console.log(`${num}`),
+    printlnBoolean: num => console.log(`${Boolean(num)}`),
     printlnString: (strStart, strSize) => printStrFromMemory(strStart, strSize)
   }
 }
