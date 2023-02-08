@@ -39,6 +39,19 @@ public class WasmEmitter {
   public void emitLocalSet(String label) {
     out.iwriteln("(local.set $" + label + ")");
   }
+
+  public void emitLocalOffset() {
+    emitComment("storing current offset value");
+    emitLocalDeclare(WasmType.i32, "offset");
+    emitGlobalGet("offset");
+    emitLocalSet("offset");
+  }
+
+  public void emitRestoreOffset() {
+    emitComment("restoring offset value");
+    emitLocalGet("offset");
+    emitGlobalSet("offset");
+  }
   
   /** The local.tee instruction sets the value of a local variable and loads the value onto the stack. */
   public void emitLocalTee(String label) {
@@ -125,13 +138,8 @@ public class WasmEmitter {
     emitCall(RuntimeStd.printlnBoolean.toString());
   }
 
-  public void emitPrintlnString() {
-    emitComment("prints string geting the size & moving offset");
-    emitAuxTee(WasmType.i32);
-    emitConst(4);
-    emitAdd(WasmType.i32);
-    emitAuxGet(WasmType.i32);
-    emitLoad(WasmType.i32);
+  public void emitPrintlnString(int length) {
+    emitConst(length);
     emitCall(RuntimeStd.printlnString.toString());
   }
 
@@ -241,7 +249,7 @@ public class WasmEmitter {
     // Boolean values in WebAssembly are represented as values of type i32.
     // In a boolean context, such as a br_if condition, any non-zero value is 
     // interpreted as true and 0 is interpreted as false.
-    out.iwriteln("(br_if " + label + ")");
+    out.iwriteln("(br_if $" + label + ")");
   }
 
   // /** The block statement creates a label that can later be branched OUT of with a br. */
