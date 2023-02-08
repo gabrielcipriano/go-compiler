@@ -18,7 +18,7 @@ public class StdPrinter implements CodeOutput {
 
   @Override
   public void iwrite(String str) {
-      System.out.print(idt + str);
+    System.out.print(idt + str);
   }
 
   @Override
