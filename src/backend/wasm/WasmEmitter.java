@@ -116,7 +116,7 @@ public class WasmEmitter {
     out.iwriteln("(" + type + ".load)");
   }
 
-  /** The store instructions, are used to store a number from memory onto the stack. */
+  /** The store instructions, are used to store a number in memory. */
   public void emitStore(WasmType type) {
     out.iwriteln("(" + type + ".store)");
   }

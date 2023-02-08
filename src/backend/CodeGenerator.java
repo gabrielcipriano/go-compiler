@@ -48,7 +48,7 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
       var strings = st.iterator();
       while(strings.hasNext()){
         String str = strings.next();
-        int strSz = str.length()-2; // ignore quotes
+        int strSz = str.length()-2; // ignore quotes "string"
         strOffsets.add(offSet);
         // emitter.emitInt32Data(offSet, strSz);
         // offSet += 4; // i32 = 4bytes
@@ -74,8 +74,21 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
     if (entry.isGlobal())
       emitter.emitGlobalSet(label);
-    else
-      emitter.emitLocalSet(label);
+    else {
+      if (!entry.isArray())
+        emitter.emitLocalSet(label);
+      else if (node.getChild(0).hasChild(0)) { // is array access:  var[3+1], as example
+        emitter.emitComment("store array val in memory");
+        emitter.emitAuxSet(entry.isFloat() ? f32 : i32);
+        visit(node.getChild(0).getChild(0));
+        emitter.emitConst(4);
+        emitter.emitMul(i32);
+        emitter.emitLocalGet(label);
+        emitter.emitAdd(i32);
+        emitter.emitAuxGet(entry.isFloat() ? f32 : i32);
+        emitter.emitStore(entry.isFloat() ? f32 : i32);
+      }
+    }
     return null;
   }
 
@@ -133,6 +146,7 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
         emitter.emitGlobalGet("offset");
         emitter.emitLocalTee(label);
         emitter.emitConst(entry.arraySz * 4); // 32 bits is 4 bytes
+        emitter.emitAdd(i32);
         emitter.emitGlobalSet("offset");
       }
       // emitter.emitLocalDeclare(entry.isFloat() ? f32 : i32, label);
@@ -399,8 +413,19 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
   
     if (entry.isGlobal())
       emitter.emitGlobalGet(label);
-    else 
-      emitter.emitLocalGet(label);
+    else {
+      if (!node.hasChild(0)) // is normal var
+        emitter.emitLocalGet(label);
+      else { // is array access:  var[3+1], as example
+        emitter.emitComment("loads a array val from memory");
+        visit(node.getChild(0));
+        emitter.emitConst(4);
+        emitter.emitMul(i32);
+        emitter.emitLocalGet(label);
+        emitter.emitAdd(i32);
+        emitter.emitLoad(entry.isFloat() ? f32 : i32);
+      }
+    }
 
     return null;
   }
