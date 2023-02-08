@@ -50,8 +50,8 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
         String str = strings.next();
         int strSz = str.length()-2; // ignore quotes
         strOffsets.add(offSet);
-        emitter.emitInt32Data(offSet, strSz);
-        offSet += 4; // i32 = 4bytes
+        // emitter.emitInt32Data(offSet, strSz);
+        // offSet += 4; // i32 = 4bytes
         emitter.emitStringData(offSet, str);
         offSet += strSz;
       }
@@ -127,7 +127,14 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
         emitter.emitGlobalDeclare(label,0.0f);
       else
         emitter.emitGlobalDeclare(label, 0);
-    // else // does nothing because of var hoisting in func declaration
+    else  // normal local vars already declared, only need to set array pointer and move offset
+      if (entry.isArray()) {
+        emitter.emitComment("reserving space for local array");
+        emitter.emitGlobalGet("offset");
+        emitter.emitLocalTee(label);
+        emitter.emitConst(entry.arraySz * 4); // 32 bits is 4 bytes
+        emitter.emitGlobalSet("offset");
+      }
       // emitter.emitLocalDeclare(entry.isFloat() ? f32 : i32, label);
     
     return null;
@@ -141,8 +148,10 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
     if (entry.isGlobal())
       emitter.emitGlobalSet(label);
-    else
+    else {
       emitter.emitLocalSet(label);
+
+    }
 
     return null;
   }
@@ -171,18 +180,29 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
       emitter.emitNewLine();
 
+      boolean hasLocalArrays = false;
+
       var localVars = vt.filterByFuncId(entry.id);
       // declares local vars ignoring params
       for (int i = entry.params.size(); i < localVars.size(); i++) {
         var localVar = localVars.get(i);
         // hoisting
         emitter.emitLocalDeclare(localVar.isFloat() ? f32 : i32, getLabel(localVar));
+
+        if (localVar.isArray())
+        hasLocalArrays = true;
       }
+
+      if (hasLocalArrays) 
+        emitter.emitLocalOffset();
 
       emitter.emitNewLine();
 
       AST funcBody = node.getChild(1);
       visit(funcBody);
+
+      if (hasLocalArrays)
+        emitter.emitRestoreOffset();
     emitter.emitEnd();
 
     return null;
@@ -321,7 +341,7 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
           emitter.emitPrintlnBoolean();
           break;
         case STRING_TYPE:
-          emitter.emitPrintlnString();
+          emitter.emitPrintlnString(st.get(expr.intData).length()-2); // ignore quotes
           break;
         case INT_TYPE:
         default:
@@ -582,7 +602,8 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 	}
 
   String getLabel(VarEntry entry) {
-    return String.format("%02d", entry.index) + "_" + entry.name;
+    String ptr = entry.isArray() ? "_ptr" : "";
+    return String.format("%02d", entry.index) + "_" + entry.name + ptr;
   }
 
 }
