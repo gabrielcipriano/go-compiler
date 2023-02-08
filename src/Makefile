@@ -39,6 +39,9 @@ run:
 # Executa o TestRig para exibir a parse tree
 debug:
 	cd $(BIN_PATH) && $(GRUN) $(GEN_PATH).$(GRAMMAR_NAME) program -gui $(FILE)
+
+exec:
+	npm --prefix ../runtime run exec -- $(FILE)
 # Remove os arquivos gerados pelo ANTLR
 clean:
 	@rm -rf $(GEN_PATH) $(BIN_PATH)

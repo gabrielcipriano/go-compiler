@@ -1,6 +1,6 @@
 (module
   (import "std" "printlnInt" (func $printlnInt (param i32)))
-  (import "std" "printlnStr" (func $printlnStr (param i32) (param i32)))
+  (import "std" "printlnString" (func $printlnString (param i32) (param i32)))
 
   (memory $mem 1)
   (export "memory" (memory $mem))
@@ -22,7 +22,7 @@
     call $printlnInt
     i32.const 0
     i32.const 11
-    call $printlnStr
+    call $printlnString
     ;; i32.const 0
     ;; i32.const 5
     ;; call $_print
