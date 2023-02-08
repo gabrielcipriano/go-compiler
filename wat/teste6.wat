@@ -13,6 +13,29 @@
   (global $aux_i32 (mut i32) (i32.const 0))
   (global $aux_f32 (mut f32) (f32.const 0.000000))
   
+  (func $__getArrPos (param $idx i32) (param $addr i32) (result i32)    
+    (local.get $idx)
+    (i32.const 4)
+    (i32.mul)
+    (local.get $addr)
+    (i32.add)
+  )
+  ;; loads an i32 array val from memory
+  (func $__loadArrValInt (param $idx i32) (param $addr i32) (result i32)    
+    (local.get $idx)
+    (local.get $addr)
+    (call $__getArrPos)
+    (i32.load)
+  )
+  
+  ;; loads an f32 array val from memory
+  (func $__loadArrValFloat (param $idx i32) (param $addr i32) (result f32)    
+    (local.get $idx)
+    (local.get $addr)
+    (call $__getArrPos)
+    (f32.load)
+  )
+  
   ;; adding strings to memory
   (global $offset (mut i32) (i32.const 0))
   
@@ -100,11 +123,8 @@
       (loop $FOR_0
         ;; loads a array val from memory
         (local.get $01_i)
-        (i32.const 4)
-        (i32.mul)
         (local.get $00_numeros_ptr)
-        (i32.add)
-        (i32.load)
+        (call $__loadArrValInt)
         (call $printlnInt)
         (local.get $01_i)
         (i32.const 1)
@@ -137,11 +157,8 @@
         (i32.const 4)
         (local.get $03_i)
         (i32.sub)
-        (i32.const 4)
-        (i32.mul)
         (local.get $00_numeros_ptr)
-        (i32.add)
-        (i32.load)
+        (call $__loadArrValInt)
         ;; store array val in memory
         (global.set $aux_i32)
         (local.get $03_i)
@@ -173,11 +190,8 @@
       (loop $FOR_2
         ;; loads a array val from memory
         (local.get $04_i)
-        (i32.const 4)
-        (i32.mul)
         (local.get $02_deTrasPraFrente_ptr)
-        (i32.add)
-        (i32.load)
+        (call $__loadArrValInt)
         (call $printlnInt)
         (local.get $04_i)
         (i32.const 1)

@@ -204,7 +204,7 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
         emitter.emitLocalDeclare(localVar.isFloat() ? f32 : i32, getLabel(localVar));
 
         if (localVar.isArray())
-        hasLocalArrays = true;
+          hasLocalArrays = true;
       }
 
       if (hasLocalArrays) 
@@ -418,12 +418,10 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
         emitter.emitLocalGet(label);
       else { // is array access:  var[3+1], as example
         emitter.emitComment("loads a array val from memory");
+
         visit(node.getChild(0));
-        emitter.emitConst(4);
-        emitter.emitMul(i32);
         emitter.emitLocalGet(label);
-        emitter.emitAdd(i32);
-        emitter.emitLoad(entry.isFloat() ? f32 : i32);
+        emitter.emitLoadArrVal(entry.isFloat() ? f32 : i32);
       }
     }
 

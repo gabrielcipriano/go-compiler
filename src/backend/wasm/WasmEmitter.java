@@ -4,6 +4,9 @@ import java.nio.ByteBuffer;
 
 import backend.commons.CodeOutput;
 
+import static backend.wasm.WasmType.f32;
+import static backend.wasm.WasmType.i32;
+
 public class WasmEmitter {
   public final WasmLabels labels = new WasmLabels();
   public final CodeOutput out;
@@ -42,7 +45,7 @@ public class WasmEmitter {
 
   public void emitLocalOffset() {
     emitComment("storing current offset value");
-    emitLocalDeclare(WasmType.i32, "offset");
+    emitLocalDeclare(i32, "offset");
     emitGlobalGet("offset");
     emitLocalSet("offset");
   }
@@ -259,9 +262,13 @@ public class WasmEmitter {
 
   // FUNCTION
 
-  public void emitFuncBegin(String label) {
-    out.iwritef("(func $%1$s (export \"%1$s\") ", label);
+  public void emitFuncBegin(String label, boolean exporting) {
+    out.iwritef("(func $%1$s " + (exporting ? "(export \"%1$s\") " : "" ), label);
     out.indent();
+  }
+
+  public void emitFuncBegin(String label) {
+    emitFuncBegin(label, true);
   }
 
   public void emitParam(WasmType type, String label) {
@@ -306,6 +313,10 @@ public class WasmEmitter {
     out.indent();
   }
 
+  public void emitLoadArrVal() {
+
+  }
+
   public void emitRuntimeSetup() {
     emitComment("Importing std i/o");
     String importFormat = "(import \"std\" \"%1$s\" (func $%1$s %2$s))";
@@ -321,9 +332,36 @@ public class WasmEmitter {
     emitNewLine();
 
     emitComment("declaring aux vars");
-    emitGlobalDeclare("aux_" + WasmType.i32, 0);
-    emitGlobalDeclare("aux_" + WasmType.f32, 0.0f);
+    emitGlobalDeclare("aux_" + i32, 0);
+    emitGlobalDeclare("aux_" + f32, 0.0f);
     emitNewLine();
+
+    emitLoadArrValFunc(i32);
+    emitLoadArrValFunc(f32);
+
+  }
+
+  private void emitLoadArrValFunc(WasmType type) {
+    emitComment("loads an " + type + " array val from memory");
+    var funcName = type == i32 ? RuntimeStd.loadArrValInt : RuntimeStd.loadArrValFloat;
+    emitFuncBegin(funcName.toString(), false);
+      emitParam(i32, "idx");
+      emitParam(i32, "addr");
+      emitResult(type);
+      emitNewLine();
+      emitLocalGet("idx");
+      emitConst(4); // each value has 4 bytes
+      emitMul(i32); 
+      emitLocalGet("addr");
+      emitAdd(i32);
+      emitLoad(type);
+    emitEnd();
+    emitNewLine();
+  }
+
+  public void emitLoadArrVal(WasmType type) {
+    var funcName = type == i32 ? RuntimeStd.loadArrValInt : RuntimeStd.loadArrValFloat;
+    emitCall(funcName.toString());
   }
 
   public void emitNewLine() {
