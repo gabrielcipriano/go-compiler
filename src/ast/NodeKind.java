@@ -54,7 +54,10 @@ public enum NodeKind {
     INCREMENT,
     DECREMENT,
     RETURN_NODE,
-    ARR_ADDRESS;
+    ARR_ADDRESS, 
+    LEN_NODE,
+    SCAN_NODE,
+    RAND_NODE;
 
 
 	public String toString() {
@@ -104,6 +107,9 @@ public enum NodeKind {
             case FUNC_DECL_NODE:    return "func_decl";
             case RETURN_NODE:       return "return";
             case ARR_ADDRESS:       return "&";
+            case LEN_NODE:          return "len";
+            case RAND_NODE:         return "rand";
+            case SCAN_NODE:         return "scan";
 			default:
 				System.err.println("ERROR: Fall through in NodeKind enumeration!");
 				System.exit(1);

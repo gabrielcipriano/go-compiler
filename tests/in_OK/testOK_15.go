@@ -2,17 +2,17 @@ package main
 
 import "fmt"
 
-func NewReader(std string) string {
-	return "tela"
-}
+// func NewReader(std string) string {
+// 	return "tela"
+// }
 
 func main() {
 
-	reader := NewReader("Stdin")
+	// reader := NewReader("Stdin")
 	fmt.Println("Simple Shell")
 	fmt.Println("---------------------")
 
-	for {
+	for true {
 		// fmt.Println("-> ")
 		// text, _ := ReadString("\n")
 		// // convert CRLF to LF

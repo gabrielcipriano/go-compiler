@@ -41,12 +41,8 @@ identifier_list :
 expr_list:
 	expr (COMMA expr)*;
 
-func:
-	len | rand;
-
 expr: 
-len																# funcExpr
-| arr_address													# arrAddress
+ arr_address													# arrAddress
 | operand (index	| arguments)?			# operandExpr
 | unary_op = (PLUS | MINUS | NOT) expr 		# unary
 | expr mul_op = (STAR | DIV) expr			# multDiv
@@ -171,7 +167,7 @@ shortVar_decl: identifier_list SHORT_VAR_DECL expr_list;
 
 operand:
   len | rand
-  |literal | operand_name | L_PR expr R_PR;
+  | literal | operand_name | L_PR expr R_PR;
 
 operand_name:
 	ID;

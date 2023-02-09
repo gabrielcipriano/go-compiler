@@ -56,6 +56,9 @@ public abstract class ASTBaseVisitor<T> {
 			case NOT_NODE:          return visitNot(node);
 
 			case I2F_NODE:          return visitI2F(node);
+			case LEN_NODE:					return visitLen(node);
+			case RAND_NODE:					return visitRand(node);
+			case ARR_ADDRESS:				return visitArrAddress(node);
 			// case OVER_NODE:         return 
 			// case EQ_PLUS_NODE:      return 
 			// case EQ_MINUS_NODE:     return 
@@ -67,6 +70,12 @@ public abstract class ASTBaseVisitor<T> {
 				return null; // NEVER REACHS
 		}
 	}
+
+	protected abstract T visitLen(AST node);
+
+	protected abstract T visitArrAddress(AST node);
+
+	protected abstract T visitRand(AST node);
 
 	protected abstract T visitAssign(AST node);
 

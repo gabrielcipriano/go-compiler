@@ -3,7 +3,7 @@ JAVAC=javac
 # Comando da JVM
 JAVA=java
 # ROOT é a raiz dos diretórios com todos os roteiros de laboratórios
-ROOT=/home/ryan/Documents/2022-2/Compiladores/go-compiler
+ROOT=/Users/cipriano/git/go-compiler
 # Caminho para o JAR do ANTLR em labs/tools
 ANTLR_PATH=$(ROOT)/tools/antlr-4.11.1-complete.jar
 # Opção de configuração do CLASSPATH para o ambiente Java
@@ -35,10 +35,14 @@ javac:
 # Executa o front-end. Comando: $ make run FILE=arquivo_de_teste
 # 'Main' é a classe com a função principal
 run:
-	$(JAVA) $(CLASS_PATH_OPTION):$(BIN_PATH) Main $(FILE)
+	DEBUG=$(DEBUG) $(JAVA) $(CLASS_PATH_OPTION):$(BIN_PATH) Main $(FILE)
 # Executa o TestRig para exibir a parse tree
 debug:
 	cd $(BIN_PATH) && $(GRUN) $(GEN_PATH).$(GRAMMAR_NAME) program -gui $(FILE)
+
+# Gera o arquivo .wat a partir do arquivo .go
+build-wat:
+	@sh ./build-wat.sh $(FILE)
 
 exec:
 	npm --prefix ../runtime run exec -- $(FILE)

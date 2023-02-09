@@ -10,11 +10,14 @@ function printStrFromMemory(strStart, strSize) {
 
 const imports = {
   std: {
-    printlnInt: num => console.log(`${num}`),
-    printlnFloat: num => console.log(`${num}`),
+    printlnInt: num => console.log(num),
+    printlnFloat: num => console.log(num),
     printlnBoolean: num => console.log(`${Boolean(num)}`),
-    printlnString: (strStart, strSize) => printStrFromMemory(strStart, strSize)
-  }
+    printlnString: (strStart, strSize) => printStrFromMemory(strStart, strSize),
+    scanInt: () =>  5,
+    scanFloat: () =>  6.66, // fmt.Scanln(&)
+    randInt: num => Math.round(Math.random() * num)
+  },
 }
 
 let filename = '';

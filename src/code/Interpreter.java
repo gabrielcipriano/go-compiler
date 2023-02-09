@@ -558,4 +558,22 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 		return null;
 	}
 	
+	@Override
+  protected Void visitLen(AST node) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  protected Void visitArrAddress(AST node) {
+	// TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  protected Void visitRand(AST node) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+	
 }

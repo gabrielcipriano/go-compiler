@@ -32,8 +32,6 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
 
   private final List<Integer> strOffsets = new ArrayList<Integer>();
 
-  private final Map<Integer, Integer> offsetArrSz = new HashMap<Integer, Integer>();
-
   public CodeGenerator(StrTable st, VarTable vt, FunctionTable ft) {
     this.st = st;
 		this.vt = vt;
@@ -85,10 +83,8 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
         emitter.emitComment("store array val in memory");
         emitter.emitAuxSet(entry.isFloat() ? f32 : i32);
         visit(node.getChild(0).getChild(0));
-        emitter.emitConst(4);
-        emitter.emitMul(i32);
         emitter.emitLocalGet(label);
-        emitter.emitAdd(i32);
+        emitter.emitGetArrayValAddress();
         emitter.emitAuxGet(entry.isFloat() ? f32 : i32);
         emitter.emitStore(entry.isFloat() ? f32 : i32);
       }
@@ -148,10 +144,14 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
       if (entry.isArray()) {
         emitter.emitComment("reserving space for local array");
         emitter.emitGlobalGet("offset");
-        emitter.emitLocalTee(label);
-        emitter.emitConst(entry.arraySz * 4); // 32 bits is 4 bytes
-        emitter.emitAdd(i32);
-        emitter.emitGlobalSet("offset");
+        emitter.emitLocalSet(label);
+        emitter.emitConst(entry.arraySz);
+        emitter.emitArrAlLoc();
+        // emitter.emitStore(i32);
+        // emitter.emitGlobalGet("offset");
+        // emitter.emitConst(4 + (entry.arraySz * 4)); // 32 bits is 4 bytes
+        // emitter.emitAdd(i32);
+        // emitter.emitGlobalSet("offset");
       }
       // emitter.emitLocalDeclare(entry.isFloat() ? f32 : i32, label);
     
@@ -422,10 +422,10 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
         emitter.emitLocalGet(label);
       else { // is array access:  var[3+1], as example
         emitter.emitComment("loads a array val from memory");
-
         visit(node.getChild(0));
         emitter.emitLocalGet(label);
-        emitter.emitLoadArrVal(entry.isFloat() ? f32 : i32);
+        emitter.emitGetArrayValAddress();
+        emitter.emitLoad(entry.isFloat() ? f32 : i32);
       }
     }
 
@@ -631,6 +631,37 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
   String getLabel(VarEntry entry) {
     String ptr = entry.isArray() ? "_ptr" : "";
     return String.format("%02d", entry.index) + "_" + entry.name + ptr;
+  }
+
+  @Override
+  protected Void visitLen(AST node) {
+    int idx = node.getChild(0).intData;
+    var entry = vt.get(idx);
+    String label = getLabel(entry);
+  
+    emitter.emitLocalGet(label);
+    emitter.emitLoad(i32);
+    return null;
+  }
+
+  @Override
+  protected Void visitArrAddress(AST node) {
+    int idx = node.intData;
+    var entry = vt.get(idx);
+    String label = getLabel(entry);
+  
+    // if (entry.isGlobal())
+    //   emitter.emitGlobalGet(label);
+    // else 
+    emitter.emitLocalGet(label);
+    return null;
+  }
+
+  @Override
+  protected Void visitRand(AST node) {
+    visit(node.getChild(0));
+    emitter.emitRandInt();
+    return null;
   }
 
 }

@@ -2,6 +2,7 @@ package backend.wasm;
 
 import java.nio.ByteBuffer;
 
+import backend.StdPrinter;
 import backend.commons.CodeOutput;
 
 import static backend.wasm.WasmType.f32;
@@ -114,12 +115,18 @@ public class WasmEmitter {
     }
   }
 
-  /** The load instructions, are used to load a number from memory onto the stack. */
+  /** The load instructions, are used to load a number from memory onto the stack. 
+   * 
+   * ($base: i32) : (i32|f32)
+  */
   public void emitLoad(WasmType type) {
     out.iwriteln("(" + type + ".load)");
   }
 
-  /** The store instructions, are used to store a number in memory. */
+  /** The store instructions, are used to store a number in memory.
+   * 
+   * ($addr: i32, $value: i32|f32)
+   */
   public void emitStore(WasmType type) {
     out.iwriteln("(" + type + ".store)");
   }
@@ -129,21 +136,26 @@ public class WasmEmitter {
     out.iwriteln("(call $" + funcLabel + ")");
   }
 
+  /** function call */
+  public void emitCall(RuntimeStd funcLabel) {
+    emitCall(funcLabel.toString());
+  }
+
   public void emitPrintlnInt() {
-    emitCall(RuntimeStd.printlnInt.toString());
+    emitCall(RuntimeStd.printlnInt);
   }
 
   public void emitPrintlnFloat() {
-    emitCall(RuntimeStd.printlnFloat.toString());
+    emitCall(RuntimeStd.printlnFloat);
   }
 
   public void emitPrintlnBoolean() {
-    emitCall(RuntimeStd.printlnBoolean.toString());
+    emitCall(RuntimeStd.printlnBoolean);
   }
 
   public void emitPrintlnString(int length) {
     emitConst(length);
-    emitCall(RuntimeStd.printlnString.toString());
+    emitCall(RuntimeStd.printlnString);
   }
 
   // OPERATIONS
@@ -267,8 +279,16 @@ public class WasmEmitter {
     out.indent();
   }
 
+  public void emitFuncBegin(RuntimeStd label, boolean exporting) {
+    emitFuncBegin(label.toString(), exporting);
+  }
+
   public void emitFuncBegin(String label) {
     emitFuncBegin(label, true);
+  }
+
+  public void emitFuncBegin(RuntimeStd label) {
+    emitFuncBegin(label.toString(), true);
   }
 
   public void emitParam(WasmType type, String label) {
@@ -324,6 +344,7 @@ public class WasmEmitter {
     out.iwritelnf(importFormat, RuntimeStd.printlnBoolean, "(param i32)");
     out.iwritelnf(importFormat, RuntimeStd.printlnFloat, "(param f32)");
     out.iwritelnf(importFormat, RuntimeStd.printlnString, "(param i32) (param i32)");
+    out.iwritelnf(importFormat, RuntimeStd.randInt, "(param i32) (result i32)");
     emitNewLine();
 
     emitComment("creating and exporting memory");
@@ -336,33 +357,97 @@ public class WasmEmitter {
     emitGlobalDeclare("aux_" + f32, 0.0f);
     emitNewLine();
 
-    emitLoadArrValFunc(i32);
-    emitLoadArrValFunc(f32);
-
+    emitDeclareGetArrLen();
+    emitDeclareGetArrayValAddress();
+    emitDeclareArrAlLoc();
   }
 
-  private void emitLoadArrValFunc(WasmType type) {
-    emitComment("loads an " + type + " array val from memory");
-    var funcName = type == i32 ? RuntimeStd.loadArrValInt : RuntimeStd.loadArrValFloat;
-    emitFuncBegin(funcName.toString(), false);
+  private void emitDeclareGetArrayValAddress() {
+    emitComment("compute an array val address from memory");
+    emitFuncBegin(RuntimeStd.getArrValAddress, false);
       emitParam(i32, "idx");
       emitParam(i32, "addr");
-      emitResult(type);
+      emitResult(i32);
       emitNewLine();
       emitLocalGet("idx");
-      emitConst(4); // each value has 4 bytes
+      emitConst(4);  // each value has 4 bytes
       emitMul(i32); 
       emitLocalGet("addr");
+      emitConst(4);
       emitAdd(i32);
-      emitLoad(type);
+      emitAdd(i32);
     emitEnd();
     emitNewLine();
   }
 
-  public void emitLoadArrVal(WasmType type) {
-    var funcName = type == i32 ? RuntimeStd.loadArrValInt : RuntimeStd.loadArrValFloat;
-    emitCall(funcName.toString());
+  /**
+   * ($idx: i32, $addr: i32) => (pos i32)
+   */
+  public void emitGetArrayValAddress() {
+    emitCall(RuntimeStd.getArrValAddress);
   }
+
+  /**
+   * ($addr: i32) => (len i32)
+   */
+  public void emitDeclareGetArrLen(){
+    emitComment("gets the array length");
+    emitFuncBegin(RuntimeStd.getArrLen, false);
+      emitParam(i32, "addr");
+      emitResult(i32);
+      emitNewLine();
+      emitLocalGet("addr");
+      emitLoad(i32);
+    emitEnd();
+    emitNewLine();
+  }
+
+  /**
+   * ($addr: i32) => (len i32)
+   */
+  public void emitGetArrLen() {
+    emitCall(RuntimeStd.getArrLen);
+  }
+  /**
+   * ($arrSize: i32) => void
+   */
+  public void emitDeclareArrAlLoc() {
+    emitComment("allocs space in memory for the array, updating offset");
+    emitFuncBegin(RuntimeStd.arrAlLoc, false);
+      emitParam(i32, "arraySz");
+      emitNewLine();
+      emitComment("storing the arrSize in the first position");
+      emitGlobalGet("offset");
+      emitLocalGet("arraySz");
+      emitStore(i32);
+      emitComment("moving offset (alloccs space)");
+      emitLocalGet("arraySz");
+      emitConst(4);
+      emitMul(i32);
+      emitConst(4); // 32 bits is 4 bytes
+      emitAdd(i32);
+      emitGlobalGet("offset");
+      emitAdd(i32);
+      emitGlobalSet("offset");
+    emitEnd();
+    emitNewLine();
+  }
+
+  /**
+   * (i32) => (i32)
+   */
+  public void emitRandInt() {
+    emitCall(RuntimeStd.randInt);
+  }
+
+  /**
+   * ($arrSize: i32) => void
+   */
+  public void emitArrAlLoc() {
+    emitCall(RuntimeStd.arrAlLoc);
+  }
+
+
 
   public void emitNewLine() {
     out.iwriteln("");
