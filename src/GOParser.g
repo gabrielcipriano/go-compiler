@@ -41,8 +41,13 @@ identifier_list :
 expr_list:
 	expr (COMMA expr)*;
 
+func:
+	len | rand;
+
 expr: 
-  operand (index	| arguments)?			# operandExpr
+len																# funcExpr
+| arr_address													# arrAddress
+| operand (index	| arguments)?			# operandExpr
 | unary_op = (PLUS | MINUS | NOT) expr 		# unary
 | expr mul_op = (STAR | DIV) expr			# multDiv
 | expr add_op = (PLUS | MINUS) expr			# plusMinus
@@ -65,7 +70,6 @@ expr:
 // 		| arguments
 // 	);
 
-
 index: L_BRACKETS expr R_BRACKETS;
 
 for_stmt: FOR (expr? | for_clause) block;
@@ -87,11 +91,21 @@ statement:
 	// | block
 	| if_stmt
 	| for_stmt
-	| print;
+	| print
+	| scan;
 /*
 function_call:
 	ID arguments
  */
+
+scan:
+	SCAN ID R_PR;
+
+rand:
+	RAND L_PR expr R_PR;
+
+len:
+	LEN L_PR ID R_PR;
 
 print:
 	PRINT L_PR expr_list R_PR;
@@ -156,7 +170,8 @@ funccall_stmt: ID arguments;
 shortVar_decl: identifier_list SHORT_VAR_DECL expr_list;
 
 operand:
-  literal | operand_name | L_PR expr R_PR;
+  len | rand
+  |literal | operand_name | L_PR expr R_PR;
 
 operand_name:
 	ID;
@@ -193,7 +208,9 @@ element_list: expr (COMMA expr)*;
 
 type_name: ID;
 
-array_type: L_BRACKETS INT_LIT R_BRACKETS type;
+array_type: L_BRACKETS INT_LIT? R_BRACKETS type;
+
+arr_address: ADDRESS ID;
 
 type:
   INT 							# intType

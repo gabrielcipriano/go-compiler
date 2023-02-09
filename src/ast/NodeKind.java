@@ -53,7 +53,8 @@ public enum NodeKind {
     EQ_DIV_NODE,
     INCREMENT,
     DECREMENT,
-    RETURN_NODE;
+    RETURN_NODE,
+    ARR_ADDRESS;
 
 
 	public String toString() {
@@ -102,6 +103,7 @@ public enum NodeKind {
             case EQ_DIV_NODE:       return "/=";
             case FUNC_DECL_NODE:    return "func_decl";
             case RETURN_NODE:       return "return";
+            case ARR_ADDRESS:       return "&";
 			default:
 				System.err.println("ERROR: Fall through in NodeKind enumeration!");
 				System.exit(1);

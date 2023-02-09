@@ -15,8 +15,10 @@ import static backend.wasm.WasmType.f32;
 import static backend.wasm.WasmType.i32;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 public class CodeGenerator extends ASTBaseVisitor<Void> {
   private final FunctionTable ft;
@@ -29,6 +31,8 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
   private int forCount = 0;
 
   private final List<Integer> strOffsets = new ArrayList<Integer>();
+
+  private final Map<Integer, Integer> offsetArrSz = new HashMap<Integer, Integer>();
 
   public CodeGenerator(StrTable st, VarTable vt, FunctionTable ft) {
     this.st = st;
@@ -65,7 +69,7 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
   }
 
   @Override
-  protected Void visitAssign(AST node) {
+  protected Void visitAssign(AST node) { // arr[3] = 34
     int idx = node.getChild(0).intData; // do not visits var assign
     var entry = vt.get(idx);
     String label = getLabel(entry);

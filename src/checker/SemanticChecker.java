@@ -492,7 +492,10 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 	@Override
 	public AST visitArrayType(GOParser.ArrayTypeContext ctx) {
 		isArray = true;
-		arraySz = Integer.parseInt(ctx.array_type().INT_LIT().getText());
+		if(ctx.array_type().INT_LIT()!=null)
+			arraySz = Integer.parseInt(ctx.array_type().INT_LIT().getText());
+		else 
+			arraySz = 0;
 		return visit(ctx.array_type().type());
 	}
 //endregion
@@ -505,7 +508,7 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 	// // TODO: isso aqui vai ser chato
 	// // @Override
 	// // public Type visitArrayLiteral(GOParser.ArrayLiteralContext ctx) {
-	// // }
+	// // } 
 
 	@Override
 	public AST visitParameterDecl(GOParser.ParameterDeclContext ctx) {
