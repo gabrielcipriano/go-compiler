@@ -14,65 +14,31 @@ Segue abaixo uma lista mínima de elementos que o seu compilador deve tratar cor
 - Sistema de tipos que trata adequadamente todos os tipos permitidos.
 - Operações de IO básicas sobre stdin e stdout para permitir testes.
 
-## Avaliações
+## Como executar
 
-### Lexical
+Para buildar o projeto, basta executar o comando abaixo:
 
-Ter casos de testes, saídas esperadas, e vai rolar perguntas sobre as implementações
+```bash
+make
+```
 
-### Tipos primitivos:
+Para executar a validação léxica, sintática e semântica de um teste em específico, e gerar o código wat dele, basta executar o comando abaixo:
 
-- char
-- string
-- float32
-- int32
-- bool
+```bash
+make run FILE=<caminho_do_arquivo>
+```
 
-Tipo composto:
-- Vetor unidimensional dos tipos primitivos
-  - criação do array: 
-    ```golang
-    var v int[100]
-    ```
+No caso dos nossos testes, o caminho do arquivo é `../tests/<nome_do_arquivo>.go`
 
-  - utilização do array: 
-    ```golang
-    v[i + 1]
-    ```
+Para gerar o código webassembly em forma leitura S, basta executar o comando abaixo:
 
-### Testes
+```bash
+make exec FILE=<caminho_do_arquivo>
+```
+No caso dos nossos testes, o caminho do arquivo é `../wat/<nome_do_arquivo>.go`
 
-Teste OK:
+Mas para gerar o código wat na pasta wat a partir da leitura do código em go, basta executar o comando abaixo:
 
-  1. Operações matemáticas
-  2. Função composta
-
-## CP 4
-
-- Tabela de Funções (nome, lista de parâmetros, lista de retorno)
-  - Tem q alinhar oq está recebendo com o que está retornando
-
-    ```golang
-    var a, b = foo()
-
-    func foo () (int, int) {
-      return 2, 2
-    }
-    ```
-
-- [ ] Verificação com função de retorno múltiplo
-- [ ] Verificar teste_BAD 18 (Comparação de tipos de retorno d função)
-- [ ] Usar array como variável simples
-
-## CP 5
-
-Faltando o break e o continue
-
-## Dicas
-
-Quando formos ler uma função, pegamos tudo como id e depois lidamos com ela. Utilizando uma tabela de símbolos
-
-```go
-func f(int) {}
-func 
+```bash
+make build-wat FILE=../tests/in_OK/test_wasm_1.go
 ```
