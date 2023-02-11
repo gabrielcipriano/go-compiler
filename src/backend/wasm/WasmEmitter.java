@@ -141,6 +141,10 @@ public class WasmEmitter {
     emitCall(funcLabel.toString());
   }
 
+  public void emitPrintln() {
+    emitCall(RuntimeStd.println);
+  }
+
   public void emitPrintlnInt() {
     emitCall(RuntimeStd.printlnInt);
   }
@@ -333,13 +337,12 @@ public class WasmEmitter {
     out.indent();
   }
 
-  public void emitLoadArrVal() {
-
-  }
+  // *** RUNTIME CONFIG ***
 
   public void emitRuntimeSetup() {
     emitComment("Importing std i/o");
     String importFormat = "(import \"std\" \"%1$s\" (func $%1$s %2$s))";
+    out.iwritelnf(importFormat, RuntimeStd.println, "");
     out.iwritelnf(importFormat, RuntimeStd.printlnInt, "(param i32)");
     out.iwritelnf(importFormat, RuntimeStd.printlnBoolean, "(param i32)");
     out.iwritelnf(importFormat, RuntimeStd.printlnFloat, "(param f32)");

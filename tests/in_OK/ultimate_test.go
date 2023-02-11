@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"math/rand"
 )
-i := 0 
+
+var triesCounter int = 0
+var printCounter int = 0
 
 func isSorted(arr []int) bool {
 
@@ -25,9 +27,12 @@ func shuffle(arr []int) {
 		arr[j] = arr[k]
 		arr[k] = aux
 	}
-	i++
-	fmt.Println("Ooops...")
-	fmt.Println(i)
+	triesCounter++
+	printCounter++
+	if printCounter == 500 {
+		printCounter = 0
+		fmt.Println("Ooops... ", triesCounter)
+	}
 }
 
 func bogoSort(arr []int) {
@@ -38,7 +43,7 @@ func bogoSort(arr []int) {
 
 func main() {
 	// arr := []int{5, 4, 2, 1, 3}
-	var arr [9]int
+	var arr [11]int
 
 	arr[0] = 54
 	arr[1] = 13
@@ -49,11 +54,15 @@ func main() {
 	arr[6] = 96
 	arr[7] = 56
 	arr[8] = 34
+	arr[9] = 77
+	arr[10] = 16
+	// arr[11] = 33
 
 	for i := 0; i < len(arr); i++ {
 		fmt.Println(arr[i])
 	}
 
+	// inplace bogosort
 	bogoSort(&arr)
 
 	for i := 0; i < len(arr); i++ {

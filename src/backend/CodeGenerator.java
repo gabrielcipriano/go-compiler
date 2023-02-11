@@ -366,6 +366,7 @@ public class CodeGenerator extends ASTBaseVisitor<Void> {
           emitter.emitPrintlnInt();
       }
     }
+    emitter.emitPrintln();
     return null;
   }
 

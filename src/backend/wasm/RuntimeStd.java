@@ -1,6 +1,7 @@
 package backend.wasm;
 
 public enum RuntimeStd {
+  println,
   printlnInt,
   printlnFloat,
   printlnString,
@@ -16,6 +17,7 @@ public enum RuntimeStd {
       case arrAlLoc:  return "__arrAlLoc";
       case getArrValAddress:  return "__getArrValAddress";
       case getArrLen:  return "__getArrLen";
+      case println:  return "println";
       case printlnFloat:  return "printlnFloat";
       case printlnString: return "printlnString";
       case printlnBoolean: return "printlnBoolean";
