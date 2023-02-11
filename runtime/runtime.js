@@ -5,22 +5,20 @@ let memory;
 function printStrFromMemory(strStart, strSize) {
   const memView = new Uint8Array(memory.buffer, strStart, strSize)
 
-  console.log(String.fromCharCode(...memView));
+  process.stdout.write(String.fromCharCode(...memView));
 }
 
 const imports = {
   std: {
-    printlnInt: num => console.log(num),
-    printlnFloat: num => console.log(num),
-    printlnBoolean: num => console.log(`${Boolean(num)}`),
+    println: num => process.stdout.write(`\n`),
+    printlnInt: num => process.stdout.write(`${num}`),
+    printlnFloat: num => process.stdout.write(`${num}`),
+    printlnFloat: num => process.stdout.write(`${num}`),
+    printlnBoolean: num => process.stdout.write(`${Boolean(num)}`),
     printlnString: (strStart, strSize) => printStrFromMemory(strStart, strSize),
-    scanInt: () =>  5,
-    scanFloat: () =>  6.66, // fmt.Scanln(&)
     randInt: num => Math.round(Math.random() * num)
   },
 }
-
-let filename = '';
 
 require('wabt')()
   .then(wabt => {
