@@ -21,5 +21,9 @@
 /**/.antlr/
 /**/.DS_Store
 /**/bin/
+/**/wat/
 
 /**/CC_Lab06_src_java/
+
+/**/node_modules/
+*.wasm

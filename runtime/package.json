@@ -1,0 +1,24 @@
+{
+  "name": "wasm_runtime",
+  "version": "1.0.0",
+  "description": "a simple wasm runtime",
+  "main": "runtime.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "exec": "node runtime.js"
+  },
+  "keywords": [
+    "wasm",
+    "runtime",
+    "webassembly"
+  ],
+  "engines": {
+    "node": "^18",
+    "npm": "^9"
+  },
+  "author": "Cipriano",
+  "license": "ISC",
+  "dependencies": {
+    "wabt": "^1.0.32"
+  }
+}

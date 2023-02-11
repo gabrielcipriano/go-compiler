@@ -38,7 +38,7 @@ public final class DataStack extends Stack<Word> {
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		Formatter f = new Formatter(sb);
-		f.format("*** STACK: ");
+		f.format("*** STACK: \n");
 		for (int i = 0; i < this.size(); i++) {
 			f.format("%d ", this.get(i).toInt());
 		}

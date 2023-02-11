@@ -29,6 +29,7 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 	private final VarTable vt;
 	private final Cpu cpu;
 	private final Io io;
+	private final FuncExecutor FuncExecutor;
 	
 
 	// Construtor basicão.
@@ -41,6 +42,28 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 		this.cpu = new Cpu(stack, memory, st, vt);
 		this.io = new Io(stack, memory, st);
 		this.callStack = new CallStack(memory, vt, ft);
+		this.FuncExecutor = new FuncExecutor(stack, callStack, ft, memory, st, vt, cpu, io);
+	}
+
+	protected Interpreter(
+		DataStack stack,
+		CallStack callStack,
+		FunctionTable ft,
+		Memory memory,
+		StrTable st,
+		VarTable vt,
+		Cpu cpu,
+		Io io
+	) {
+		this.stack = stack;
+		this.callStack = callStack;
+		this.ft = ft;
+		this.memory = memory;
+		this.st = st;
+		this.vt = vt;
+		this.cpu = cpu;
+		this.io = io;
+		this.FuncExecutor = new FuncExecutor(stack, callStack, ft, memory, st, vt, cpu, io);
 	}
 
 	@Override
@@ -49,23 +72,19 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 		// visit(node.getChild(1)); // run block
 
 		visitAllChildren(node);
-    boolean hasMain = false;
-		for (int i = 0; i < ft.getSize() ; i++) {
+		boolean hasMain = false;
+		for (int i = 0; i < ft.getSize(); i++) {
 			FunctionEntry funcEntry = ft.get(i);
 			if (funcEntry.name.equals("main")) {
-				callStack.push(funcEntry.id);
-				visit(funcEntry.declareNode.getChild(1));
-				callStack.pop();
+				FuncExecutor.call(funcEntry);
 				hasMain = true;
-        break;
+				break;
 			}
 		}
-    if(!hasMain) {
-      System.err.println("PLEASE PROVIDE A MAIN FUNCTION");
+		if (!hasMain) {
+			System.err.println("PLEASE PROVIDE A MAIN FUNCTION");
 			System.exit(1);
 		}
-		System.out.println();
-		System.out.println(memory);
 		io.close();
 
 		return null; // Java exige um valor de retorno mesmo para Void... :/
@@ -73,15 +92,19 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 
 	@Override
 	protected Void visitAssign(AST node) {
-		// visits var assign (stacking var index)
+		// visits var assign (stacking var iD)
 		visit(node.getChild(0));
 		// visits expression
 		visit(node.getChild(1));
 
 		Word value = stack.pop();
-		int varIndex = stack.popi();
+		int varId = stack.popi();
 
-		memory.store(callStack.getVarAddress(varIndex), value);
+		// ((ACHO)) que dá pra fazer isso diretamente sem checar o tipo
+		// pois ambos stack e memory usam word internamente
+		int varAddress = callStack.getVarAddress(varId);
+
+		memory.store(varAddress, value);
 		return null;
 	}
 
@@ -120,8 +143,8 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 
 	@Override
 	protected Void visitVarAssign(AST node) {
-		int varIndex = node.intData;
-		stack.push(varIndex);
+		int varId = node.intData;
+		stack.push(varId);
 		return null;
 	}
 
@@ -139,6 +162,7 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 	// TODO
 	@Override
 	protected Void visitReturn(AST node) {
+		visitAllChildren(node);
 		return null;
 	}
 
@@ -165,7 +189,6 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 
 	@Override
 	protected Void visitFor(AST node) {
-
 		AST clause = node.getChild(0);
 		// Avaliar pros casos sem ini_stmt e post_stmt
 		if(clause.hasChild(1)){
@@ -297,13 +320,14 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 
 	@Override
 	protected Void visitVarUse(AST node) {
-		int varIndex = node.intData;
+		int varId = node.intData;
 	
 		// TODO: TRATAR ARRAY(??)
 
 		// ((ACHO)) que dá pra fazer isso diretamente sem checar o tipo
 		// pois ambos stack e memory usam word internamente
-		int varAddress = callStack.getVarAddress(varIndex);
+		int varAddress = callStack.getVarAddress(varId);
+
 		Word word = memory.get(varAddress);
 		stack.push(word);
 		
@@ -313,11 +337,9 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 	@Override
 	protected Void visitFuncCall(AST node) {
 		int funcId = node.intData;
-		callStack.push(funcId);
 
-		visitAllChildren(node);
-		visit(ft.get(funcId).declareNode.getChild(1)); // visits block
-		callStack.pop();
+		visitAllChildren(node); // stacks params
+		FuncExecutor.call(ft.get(funcId));
 		return null;
 	}
 
@@ -535,5 +557,23 @@ public class Interpreter extends ASTBaseVisitor<Void> {
 			visit(children.next());
 		return null;
 	}
+	
+	@Override
+  protected Void visitLen(AST node) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  protected Void visitArrAddress(AST node) {
+	// TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  protected Void visitRand(AST node) {
+    // TODO Auto-generated method stub
+    return null;
+  }
 	
 }

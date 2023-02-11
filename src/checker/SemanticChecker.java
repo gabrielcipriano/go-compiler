@@ -41,7 +41,7 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 	private AST root;
 
 	private boolean isArray = false;
-	private int arraySz = -1;
+	private int arraySz = 0;
 
 	// Exibe a AST no formato DOT em stderr.
 	public void printAST() {
@@ -62,7 +62,7 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 	}
 
 	// Testa se o dado token foi declarado antes.
-	private int checkVar(VarEntry entry, String varName,int line) {
+	private int checkVar(VarEntry entry, String varName, int line) {
 		if (entry == null)
 			PANIC("SEMANTIC ERROR (%d): variable was not declared.\n", line, varName);
 		if (isArray && !entry.isArray())
@@ -120,12 +120,19 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 
 		for (int i = 0; i < exprNodes.size(); i++) {
 			var argNode = exprNodes.get(i);
-			if(argNode.type == INT_TYPE && func.params.get(i) == FLOAT32_TYPE) {
+			if (argNode.kind == NodeKind.ARR_ADDRESS) {
+				var funcParams = vt.filterByFuncId(func.id);
+				var paramEntry = funcParams.get(i);
+				if(!paramEntry.isArray())
+					PANIC("SEMANTIC ERROR (%d): param '%s' is not an array.\n", ctx.start.getLine(), paramEntry.name);
+				var argEntry = vt.get(argNode.intData);
+				if (argEntry.type != paramEntry.type)
+					diffTypeError(ctx.start.getLine(),"array argument to function", ctx.getText(), argEntry.type, paramEntry.type);
+			} else if(argNode.type == INT_TYPE && func.params.get(i) == FLOAT32_TYPE) {
 				exprNodes.remove(i);
 				exprNodes.add(i, AST.createConvNode(Conv.I2F, argNode));
 				continue;
-			}
-			if(argNode.type != func.params.get(i))
+			} else if(argNode.type != func.params.get(i))
 				diffTypeError(ctx.start.getLine(),"argument to function", ctx.getText(), argNode.type, func.params.get(i));
 		}
 		return exprNodes;
@@ -147,7 +154,7 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 		VarEntry entry = sh.addVar(varName, line, type, isConst);
 		int idx = vt.addVar(entry);
 
-		if (sh.scopeDepth != sh.GLOBAL_SCOPE)
+		if (!sh.isGlobalScope())
 			entry.setFuncId(ft.getLastIdx());
 		return idx;
 	}
@@ -171,9 +178,10 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 	private int newArray(String text, int line, Type type, boolean isConst) {
 		VarEntry entry = sh.addVar(text, line, type, arraySz, isConst);
 		isArray = false;
+		arraySz = 0;
 		int idx = vt.addVar(entry);
 
-		if (sh.scopeDepth != sh.GLOBAL_SCOPE)
+		if (!sh.isGlobalScope())
 			entry.setFuncId(ft.getLastIdx());
 
 		return idx;
@@ -212,7 +220,6 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 
 	@Override
 	public AST visitProgram(GOParser.ProgramContext ctx) {
-		sh.push();
 		this.root = AST.newSubtree(NodeKind.PROGRAM_NODE, NO_TYPE);
 		visit(ctx.package_clause());
 		for(var line : ctx.program_sect()){
@@ -493,7 +500,10 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 	@Override
 	public AST visitArrayType(GOParser.ArrayTypeContext ctx) {
 		isArray = true;
-		arraySz = Integer.parseInt(ctx.array_type().INT_LIT().getText());
+		if(ctx.array_type().INT_LIT()!=null)
+			arraySz = Integer.parseInt(ctx.array_type().INT_LIT().getText());
+		else 
+			arraySz = -1;
 		return visit(ctx.array_type().type());
 	}
 //endregion
@@ -506,12 +516,13 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 	// // TODO: isso aqui vai ser chato
 	// // @Override
 	// // public Type visitArrayLiteral(GOParser.ArrayLiteralContext ctx) {
-	// // }
+	// // } 
 
 	@Override
 	public AST visitParameterDecl(GOParser.ParameterDeclContext ctx) {
 		AST typeNode = visit(ctx.type());
 		int idx = newVar(ctx.ID().getSymbol(), typeNode.type, false);
+		isArray = false;
 		return new AST(NodeKind.VAR_DECL_NODE, idx, typeNode.type);
 	}
 
@@ -529,7 +540,6 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 		List<Type> resultTypes = new ArrayList<Type>();
 		sh.push();
 		
-
 		if (ctx.result() != null)
 			for (TypeContext typeCtx : ctx.result().type())
 				resultTypes.add(visit(typeCtx).type);
@@ -537,13 +547,13 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 		int idx = newFunc(ctx.ID().getSymbol(), resultTypes); 
 
 		AST paramsNode = visit(ctx.parameters());
+		ft.get(idx).setParams(paramsNode.getChildrenTypes());
 
 		// paramsNode.getChildrenTypes(), resultTypes
 		AST blockNode = visit(ctx.block());
 
 		AST funcNode = AST.newSubtree(NodeKind.FUNC_DECL_NODE, NO_TYPE, idx, paramsNode, blockNode);
 		ft.get(idx).setDeclareNode(funcNode);
-		ft.get(idx).setParams(paramsNode.getChildrenTypes());
 		sh.pop();
 		
 		return funcNode;
@@ -617,6 +627,19 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 	}
 
 	@Override
+	public AST visitArrAddress(GOParser.ArrAddressContext ctx) {
+		var token =	ctx.arr_address().ID().getSymbol();		;
+		String varName = token.getText();
+		int line = token.getLine();
+		VarEntry entry = sh.lookupVar(varName);
+		isArray = true;
+		int idx = checkVar(entry, varName, line);
+		isArray = false;
+		
+		return new AST(NodeKind.ARR_ADDRESS, idx, INT_TYPE);
+	}
+
+	@Override
 	public AST visitFunccall_stmt(GOParser.Funccall_stmtContext ctx) {
 		var funcNode = checkFuncCall(ctx.ID().getSymbol());
 
@@ -639,17 +662,55 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 		return new AST(NodeKind.NIL_LIT_NODE, 0, NIL_TYPE);
 	}
 
+	@Override
 	public AST visitStrVal(GOParser.StrValContext ctx) {
 		int idx = st.addString(ctx.getText());
 		return new AST(NodeKind.STR_LIT_NODE, idx, STRING_TYPE);
 	}
-
+	
+	@Override
 	public AST visitFloatVal(GOParser.FloatValContext ctx){
 		return new AST(NodeKind.FLOAT_LIT_NODE,Float.parseFloat(ctx.getText()),FLOAT32_TYPE);
 	}
 
+	@Override
 	public AST visitTrueVal(GOParser.TrueValContext ctx){
 		return new AST(NodeKind.BOOL_LIT_NODE,1,BOOLEAN_TYPE);
+	}
+
+	@Override
+	public AST visitLen(GOParser.LenContext ctx){
+		var token =	ctx.ID().getSymbol();
+		String varName = token.getText();
+		int line = token.getLine();
+		VarEntry entry = sh.lookupVar(varName);
+		isArray = true;
+		int idx = checkVar(entry, varName, line);
+		isArray = false;
+		var arg = new AST(NodeKind.VAR_USE_NODE,idx,entry.type);
+
+		return AST.newSubtree(NodeKind.LEN_NODE, Type.INT_TYPE,arg);
+
+	}
+
+	@Override
+	public AST visitScan(GOParser.ScanContext ctx){
+		var newVar = sh.lookupVar(ctx.ID().getText());
+		return AST.newSubtree(NodeKind.SCAN_NODE, NO_TYPE);
+	}
+
+	@Override
+	public AST visitRand(GOParser.RandContext ctx){
+
+
+		var expr = visit(ctx.expr());
+
+		if(expr.type != Type.INT_TYPE){
+			diffTypeError(ctx.start.getLine(), "argument to function", ctx.expr().getText(), expr.type, Type.INT_TYPE);
+		}
+
+		return AST.newSubtree(NodeKind.RAND_NODE, Type.INT_TYPE,expr);
+
 	}
 
 	public AST visitFalseVal(GOParser.FalseValContext ctx){
@@ -672,6 +733,7 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 			return arrAccessNode;
 		}
 		if(ctx.arguments() != null){
+			
 			Token nameFunc = ctx.operand().operand_name().ID().getSymbol();
 			var funcNode = checkFuncCall(nameFunc);
 			FunctionEntry func = ft.get(funcNode.intData);
@@ -696,7 +758,13 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 			return visit(ctx.literal());
 		if(ctx.expr() != null)
 			return visit(ctx.expr());
-		return visit(ctx.operand_name());
+		if (ctx.operand_name() != null)
+			return visit(ctx.operand_name());
+		if(ctx.len() != null)
+			return visit(ctx.len());
+		if(ctx.rand() != null)
+			return visit(ctx.rand());
+		return null;
 	}
 
 	@Override
@@ -771,6 +839,8 @@ public class SemanticChecker extends GOParserBaseVisitor<AST> {
 			node = NodeKind.GREATER_NODE;
 		} else if(ctx.GREATER_EQ() != null) {
 			node = NodeKind.GREATER_EQ_NODE;
+		} else {
+			PANIC("SEMANTIC ERROR (%d):  invalid relation operator %s", ctx.start.getLine(), ctx.getText());
 		}
 
 		if (left.type == STRING_TYPE && right.type == STRING_TYPE)

@@ -1,6 +1,6 @@
 package main
 
-func len(arr [5]int) int {
+func _len(arr [5]int) int {
 	return 5
 }
 

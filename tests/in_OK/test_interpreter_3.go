@@ -2,16 +2,24 @@ package main
 
 import "fmt"
 
-func soma(c float32, d int) float32 {
-	return c + d
+func fibonacci(a int, b int, limit int) int {
+	next := a + b
+	fmt.Println(a)
+
+	if next <= limit {
+		return fibonacci(b, next, limit)
+	}
+	fmt.Println(b)
+	return b
+}
+
+func fibonacciSequence(limit int) int {
+	fmt.Println("Fibonacci sequence:")
+	return fibonacci(0, 1, limit)
 }
 
 func main() {
-	var c float32 // 5
-	var d int = 3
+	lastFibonacci := fibonacciSequence(30)
 
-	// ...
-	c = soma(c, 1)
-
-	fmt.Println(c, soma(d, d))
+	fmt.Println("Last fibonacci before limit:", lastFibonacci)
 }

@@ -1,10 +1,15 @@
 package main
 
-import "fmt"
+func doNothingArr(array []int) {
 
+}
+func doNothing(num int) int {
+	return num
+}
 func main() {
-	a := 1
-	b := 2.0
-	c := a + b
-	fmt.Println(c)
+	var d [5]int
+
+	d[4] = 5
+	doNothing(d[4])
+	doNothingArr(&d)
 }

@@ -13,7 +13,10 @@ WS                  : [ \t]+  -> skip ;
 TERMINATOR          : [\r\n]+ -> skip;
 
 // Símbolos
-
+SCAN                : 'fmt.Scanln(&';
+LEN                 : 'len';
+RAND                : 'rand.Intn';
+ADDRESS             : '&';
 PRINT               : 'fmt.Println';
 PLUS                : '+' ;
 MINUS               : '-' ;
@@ -74,7 +77,8 @@ FALLTHROUGH         : 'fallthrough';
 TYPE                : 'type';
 CONTINUE            : 'continue' -> mode(NLSEMI);
 FOR                 : 'for';
-IMPORT              : 'import' .*? '\n' -> skip;
+IMPORT2             : 'import (' .*? ')' -> skip;
+IMPORT              : 'import' ~('(')*? '\n' -> skip;
 RETURN              : 'return' -> mode(NLSEMI);
 
 // Strings

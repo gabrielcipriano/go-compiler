@@ -203,7 +203,7 @@ public class AST {
 		ft = funcTable;
 		System.err.printf("digraph {\ngraph [ordering=\"out\"];\n");
 
-		String debug = System.getenv().get("DEBUG");
+		String debug = System.getenv().get("DEBUG") == null ? "false" : System.getenv().get("DEBUG");
 		boolean isDebugging = debug.equals("true") || debug.equals("1");
 
 		tree.printNodeDot(isDebugging);

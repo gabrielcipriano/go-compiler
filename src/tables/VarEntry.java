@@ -21,7 +21,7 @@ public final class VarEntry {
     this.line = line;
     this.scope = scope;
     this.type = type;
-    this.arraySz = -1;
+    this.arraySz = 0;
     this.isConstant = isConst;
     this.funcId = VarEntry.NO_FUNCTION;
   }
@@ -49,7 +49,7 @@ public final class VarEntry {
   }
 
   public boolean isArray(){
-    return arraySz > 0;
+    return arraySz != 0;
   }
 
   public boolean isInt() {
@@ -66,6 +66,10 @@ public final class VarEntry {
 
   public boolean isString() {
     return type == Type.STRING_TYPE;
+  }
+
+  public boolean isGlobal() {
+    return this.scope == 1;
   }
 
   public String toStringNonVerbose() {
